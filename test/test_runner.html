@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校园失物招领系统 - 自动化单元测试报告</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+
+  <!-- 顶部标题栏 -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-200">
+        <i class="fa-solid fa-vial-circle-check"></i>
+      </div>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
+          自动化单元测试运行器
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            白盒测试与边界值用例集
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400 mt-0.5">软件工程第二次结对作业 · 模块级全自动化断言执行</p>
+      </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="flex items-center gap-2">
+      <button onclick="runAllTests()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>重新运行测试</span>
+      </button>
+      <a href="../index.html" class="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition flex items-center gap-1">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>返回系统</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- 统计仪表盘面板 -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div id="statTotal" class="text-2xl font-black text-slate-800">10</div>
+      <div class="text-[11px] text-slate-400 mt-0.5 font-medium">测试用例总数</div>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div id="statPassed" class="text-2xl font-black text-emerald-600">0</div>
+      <div class="text-[11px] text-emerald-700 mt-0.5 font-medium flex items-center justify-center gap-1">
+        <i class="fa-solid fa-circle-check text-xs"></i> 成功通过 (PASS)
+      </div>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div id="statFailed" class="text-2xl font-black text-rose-500">0</div>
+      <div class="text-[11px] text-rose-600 mt-0.5 font-medium flex items-center justify-center gap-1">
+        <i class="fa-solid fa-circle-xmark text-xs"></i> 异常未通过 (FAIL)
+      </div>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
+      <div id="statDuration" class="text-2xl font-black text-teal-600">0ms</div>
+      <div class="text-[11px] text-teal-700 mt-0.5 font-medium flex items-center justify-center gap-1">
+        <i class="fa-regular fa-clock text-xs"></i> 执行总耗时
+      </div>
+    </div>
+  </div>
+
+  <!-- 进度条 -->
+  <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+    <div class="flex justify-between text-xs font-semibold text-slate-700">
+      <span>测试执行进度与通过率</span>
+      <span id="rateText" class="text-emerald-600 font-bold">100%</span>
+    </div>
+    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+      <div id="progressBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%;"></div>
+    </div>
+  </div>
+
+  <!-- 用例详细列表 -->
+  <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-emerald-600"></i>
+        <span>用例执行明细与白盒断言报告</span>
+      </h3>
+      <span class="text-xs text-slate-400">满足软件工程作业附录 Mocha/Chai 标准规范</span>
+    </div>
+
+    <!-- 列表挂载点 -->
+    <div id="testResultsList" class="space-y-3">
+      <!-- 动态生成结果项 -->
+    </div>
+  </div>
+
+  <!-- 引入被测系统核心逻辑与测试用例集 -->
+  <script src="../js/utils.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="unit_tests.js"></script>
+
+  <!-- 自动化测试微型运行引擎 -->
+  <script>
+    // 自定义轻量级断言库 (兼容 Chai/Mocha 语义)
+    const assert = {
+      strictEqual(actual, expected, message) {
+        if (actual !== expected) {
+          throw new Error(message || `断言失败：预期值【${expected}】，实际值【${actual}】`);
+        }
+      },
+      isTrue(val, message) {
+        if (val !== true) {
+          throw new Error(message || `断言失败：预期为 true，实际为【${val}】`);
+        }
+      },
+      isFalse(val, message) {
+        if (val !== false) {
+          throw new Error(message || `断言失败：预期为 false，实际为【${val}】`);
+        }
+      }
+    };
+
+    function runAllTests() {
+      const startTime = performance.now();
+      let passed = 0;
+      let failed = 0;
+      const resultsContainer = document.getElementById('testResultsList');
+      resultsContainer.innerHTML = '';
+
+      UnitTests.forEach((test, idx) => {
+        let isPass = true;
+        let errMsg = '';
+        const caseStart = performance.now();
+
+        try {
+          test.testFn(assert);
+        } catch (err) {
+          isPass = false;
+          errMsg = err.message;
+        }
+
+        const caseDuration = (performance.now() - caseStart).toFixed(2);
+
+        if (isPass) {
+          passed++;
+        } else {
+          failed++;
+        }
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition ${isPass ? 'bg-slate-50 border-slate-200/80 hover:border-emerald-300' : 'bg-rose-50 border-rose-200'}`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                  ${idx + 1}
+                </span>
+                <span class="text-xs font-bold text-slate-800">${test.name}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-medium bg-slate-200/70 text-slate-600">
+                  ${test.category}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 pl-8 leading-relaxed">${test.description}</p>
+              ${errMsg ? `<div class="mt-2 pl-8 text-xs text-rose-600 font-mono bg-rose-100/50 p-2 rounded-lg">${errMsg}</div>` : ''}
+            </div>
+
+            <div class="text-right shrink-0">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}">
+                <i class="fa-solid ${isPass ? 'fa-check' : 'fa-xmark'}"></i>
+                ${isPass ? 'PASSED' : 'FAILED'}
+              </span>
+              <div class="text-[10px] text-slate-400 mt-1 font-mono">${caseDuration} ms</div>
+            </div>
+          </div>
+        `;
+        resultsContainer.appendChild(card);
+      });
+
+      const totalDuration = (performance.now() - startTime).toFixed(1);
+
+      // 更新仪表盘数值
+      document.getElementById('statTotal').innerText = UnitTests.length;
+      document.getElementById('statPassed').innerText = passed;
+      document.getElementById('statFailed').innerText = failed;
+      document.getElementById('statDuration').innerText = totalDuration + 'ms';
+
+      const rate = Math.round((passed / UnitTests.length) * 100);
+      document.getElementById('rateText').innerText = rate + '%';
+      document.getElementById('progressBar').style.width = rate + '%';
+    }
+
+    // 页面加载完成后自动触发跑测
+    window.addEventListener('DOMContentLoaded', () => {
+      runAllTests();
+    });
+  </script>
+</body>
+</html>
