@@ -48,7 +48,7 @@
   <!-- 统计仪表盘面板 -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
     <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
-      <div id="statTotal" class="text-2xl font-black text-slate-800">10</div>
+      <div id="statTotal" class="text-2xl font-black text-slate-800">0</div>
       <div class="text-[11px] text-slate-400 mt-0.5 font-medium">测试用例总数</div>
     </div>
     <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
@@ -89,7 +89,7 @@
         <i class="fa-solid fa-list-check text-emerald-600"></i>
         <span>用例执行明细与白盒断言报告</span>
       </h3>
-      <span class="text-xs text-slate-400">满足软件工程作业附录 Mocha/Chai 标准规范</span>
+      <span class="text-xs text-slate-400">浏览器端自定义断言测试</span>
     </div>
 
     <!-- 列表挂载点 -->
@@ -105,7 +105,7 @@
 
   <!-- 自动化测试微型运行引擎 -->
   <script>
-    // 自定义轻量级断言库 (兼容 Chai/Mocha 语义)
+    // 自定义轻量级断言库
     const assert = {
       strictEqual(actual, expected, message) {
         if (actual !== expected) {
@@ -135,12 +135,23 @@
         let isPass = true;
         let errMsg = '';
         const caseStart = performance.now();
+        const originalSaveItems = DataManager.saveItems;
+        const originalGetItems = DataManager.getItems;
+        let fixture = JSON.parse(JSON.stringify(initialMockData));
+        DataManager.getItems = () => JSON.parse(JSON.stringify(fixture));
+        DataManager.saveItems = items => {
+          fixture = JSON.parse(JSON.stringify(items));
+          return true;
+        };
 
         try {
           test.testFn(assert);
         } catch (err) {
           isPass = false;
           errMsg = err.message;
+        } finally {
+          DataManager.getItems = originalGetItems;
+          DataManager.saveItems = originalSaveItems;
         }
 
         const caseDuration = (performance.now() - caseStart).toFixed(2);
@@ -160,13 +171,13 @@
                 <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
                   ${idx + 1}
                 </span>
-                <span class="text-xs font-bold text-slate-800">${test.name}</span>
+                <span class="text-xs font-bold text-slate-800">${Utils.escapeHtml(test.name)}</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-md font-medium bg-slate-200/70 text-slate-600">
-                  ${test.category}
+                  ${Utils.escapeHtml(test.category)}
                 </span>
               </div>
-              <p class="text-xs text-slate-500 pl-8 leading-relaxed">${test.description}</p>
-              ${errMsg ? `<div class="mt-2 pl-8 text-xs text-rose-600 font-mono bg-rose-100/50 p-2 rounded-lg">${errMsg}</div>` : ''}
+              <p class="text-xs text-slate-500 pl-8 leading-relaxed">${Utils.escapeHtml(test.description)}</p>
+              ${errMsg ? `<div class="mt-2 pl-8 text-xs text-rose-600 font-mono bg-rose-100/50 p-2 rounded-lg">${Utils.escapeHtml(errMsg)}</div>` : ''}
             </div>
 
             <div class="text-right shrink-0">

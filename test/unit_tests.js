@@ -1,6 +1,6 @@
 /**
  * unit_tests.js - 校园失物招领单元测试用例集
- * 包含 10 个白盒测试与边界值测试用例，覆盖表单校验、多维检索、安全防护与数据流转
+ * 包含 17 个白盒测试与边界值测试用例，覆盖表单校验、多维检索、安全防护与数据流转
  */
 
 const UnitTests = [
@@ -193,6 +193,132 @@ const UnitTests = [
       const result = Utils.parseImportData(corruptedJson);
       assert.isFalse(result.success, '损坏的 JSON 应该解析失败');
       assert.isTrue(result.message.includes('JSON 解析失败'), '应给出友好的错误原因提示');
+    }
+  },
+
+  {
+    name: '测试用例 11: 编辑自己的发布信息并保留业务状态',
+    category: '发布管理测试 (DataManager.updateItem)',
+    description: '验证编辑操作能够更新标题和地点，同时保留原有 ID、已解决状态和发布时间。',
+    testFn(assert) {
+      const created = DataManager.addItem({
+        type: 'found',
+        title: '待编辑的水杯',
+        category: '其他物品',
+        location: '旧地点',
+        date: '2026-10-02',
+        contactType: '微信',
+        contactVal: 'editor_test'
+      });
+      DataManager.updateItemStatus(created.id, 'solved');
+      const before = DataManager.getItemById(created.id);
+      const updated = DataManager.updateItem(created.id, {
+        title: '修改后的水杯',
+        location: '新地点'
+      });
+      const after = DataManager.getItemById(created.id);
+
+      assert.isTrue(updated, '自己的信息应当允许编辑');
+      assert.strictEqual(after.id, before.id, '编辑不能改变信息 ID');
+      assert.strictEqual(after.title, '修改后的水杯', '标题应更新');
+      assert.strictEqual(after.location, '新地点', '地点应更新');
+      assert.strictEqual(after.status, 'solved', '编辑不能重置已解决状态');
+      assert.strictEqual(after.timestamp, before.timestamp, '编辑不能改变发布时间');
+      assert.strictEqual(after.publisherName, before.publisherName, '编辑不能改变发布者');
+      assert.strictEqual(after.resolvedTime, before.resolvedTime, '编辑不能改变结贴时间');
+      DataManager.deleteItem(created.id);
+    }
+  },
+
+  {
+    name: '测试用例 12: 非本人信息禁止编辑',
+    category: '权限边界测试 (DataManager.updateItem)',
+    description: '验证非本人发布的信息不能通过数据管理层被修改。',
+    testFn(assert) {
+      const original = DataManager.getItemById(1002);
+      const changed = DataManager.updateItem(1002, { title: '不应被修改' });
+      const current = DataManager.getItemById(1002);
+      assert.isFalse(Boolean(original && original.isMine), '测试数据应属于其他用户');
+      assert.isFalse(changed, '非本人信息不应允许编辑');
+      assert.strictEqual(current.title, original.title, '非本人信息标题应保持不变');
+    }
+  },
+
+  {
+    name: '测试用例 13: 编辑后的联系方式仍需通过格式校验',
+    category: '编辑校验测试 (validateItem)',
+    description: '验证编辑联系方式时仍执行与首次发布相同的手机号格式校验。',
+    testFn(assert) {
+      const result = Utils.validateItem({
+        type: 'lost',
+        title: '修改后的课本',
+        category: '书籍文具',
+        location: '图书馆',
+        date: '2026-10-02',
+        contactType: '手机号',
+        contactVal: '123'
+      });
+      assert.isFalse(result.isValid, '非法手机号不能保存编辑结果');
+      assert.isTrue(result.errors.some(e => e.includes('手机号码格式不正确')), '应返回手机号格式错误');
+    }
+  },
+  {
+    name: '测试用例 14: 非法编辑内容不会覆盖已保存的数据',
+    category: '编辑校验测试 (DataManager.updateItem)',
+    description: '空白标题、空白地点和错误手机号均应保存失败，原记录保持不变。',
+    testFn(assert) {
+      const before = DataManager.getItemById(1001);
+      const invalidUpdates = [
+        { title: '   ' }, { location: '   ' },
+        { contactType: '手机号', contactVal: '123' }
+      ];
+      invalidUpdates.forEach(updates => {
+        assert.isFalse(DataManager.updateItem(1001, updates), '非法内容应拒绝保存');
+        assert.strictEqual(JSON.stringify(DataManager.getItemById(1001)), JSON.stringify(before), '原记录不能被覆盖');
+      });
+    }
+  },
+  {
+    name: '测试用例 15: 不存在的记录不能编辑',
+    category: '编辑异常测试 (DataManager.updateItem)',
+    description: '记录不存在或已删除时返回失败，不创建新记录。',
+    testFn(assert) {
+      const before = JSON.stringify(DataManager.getItems());
+      assert.isFalse(DataManager.updateItem('missing-item', { title: '不存在的物品' }));
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 16: 图片移除和内部字段保护',
+    category: '编辑字段测试 (DataManager.updateItem)',
+    description: '允许移除原图片，但修改 ID、状态、发布时间、发布者或归属标记不会生效。',
+    testFn(assert) {
+      const before = DataManager.getItemById(1001);
+      assert.isTrue(DataManager.updateItem(1001, {
+        img: '', id: 'changed', status: 'solved', timestamp: 0,
+        publisherName: 'other', isMine: false
+      }));
+      const after = DataManager.getItemById(1001);
+      assert.strictEqual(after.img, '');
+      ['id', 'status', 'timestamp', 'publisherName', 'isMine'].forEach(field => {
+        assert.strictEqual(after[field], before[field], field + '应保持不变');
+      });
+    }
+  },
+  {
+    name: '测试用例 17: 存储失败时不误报编辑成功',
+    category: '存储异常测试 (DataManager.updateItem)',
+    description: '模拟本地缓存写入失败，更新方法必须返回失败并保持原记录。',
+    testFn(assert) {
+      const before = JSON.stringify(DataManager.getItemById(1001));
+      const saveItems = DataManager.saveItems;
+      DataManager.saveItems = () => false;
+      try {
+        assert.isFalse(DataManager.updateItem(1001, { title: '存储失败的修改' }));
+        assert.strictEqual(JSON.stringify(DataManager.getItemById(1001)), before);
+      } finally {
+        DataManager.saveItems = saveItems;
+      }
     }
   }
 ];

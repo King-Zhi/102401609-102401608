@@ -183,6 +183,33 @@ const DataManager = {
   },
 
   /**
+   * 更新自己发布的信息内容，保留原有 ID、状态和发布时间。
+   */
+  updateItem(id, updates) {
+    const items = this.getItems();
+    const index = items.findIndex(it => String(it.id) === String(id));
+    if (index < 0 || !items[index].isMine || !updates || typeof updates !== 'object') {
+      return false;
+    }
+    const target = { ...items[index] };
+
+    const editableFields = [
+      'type', 'title', 'category', 'location', 'date', 'desc',
+      'contactType', 'contactVal', 'img'
+    ];
+    editableFields.forEach(field => {
+      if (Object.prototype.hasOwnProperty.call(updates, field)) {
+        target[field] = updates[field];
+      }
+    });
+    const validator = typeof Utils !== 'undefined' ? Utils : require('./utils.js');
+    if (!validator.validateItem(target).isValid) return false;
+    target.updatedAt = new Date().toISOString();
+    items[index] = target;
+    return this.saveItems(items);
+  },
+
+  /**
    * 删除物品（用于我的发布管理）
    */
   deleteItem(id) {

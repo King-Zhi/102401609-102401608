@@ -41,7 +41,7 @@
             <div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 border-b border-slate-100">助教评测辅助功能</div>
             <a href="test/test_runner.html" target="_blank" class="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition">
               <i class="fa-solid fa-vial-circle-check text-emerald-600"></i>
-              <span>运行自动化单元测试 (10用例)</span>
+              <span>运行自动化单元测试</span>
             </a>
             <button onclick="App.handleResetData()" class="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
               <i class="fa-solid fa-rotate-left text-amber-500"></i>
@@ -228,7 +228,7 @@
           <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">
             <i class="fa-solid fa-pen-nib"></i>
           </div>
-          <h3 class="font-bold text-base text-slate-800">发布失物 / 招领信息</h3>
+          <h3 class="font-bold text-base text-slate-800"><span id="publishModalTitle">发布失物 / 招领信息</span></h3>
         </div>
         <button onclick="App.closePublishModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
           <i class="fa-solid fa-xmark text-base"></i>
@@ -335,7 +335,7 @@
           <button type="button" onclick="App.closePublishModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-xl font-medium transition">取消</button>
           <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-1.5">
             <i class="fa-solid fa-paper-plane text-xs"></i>
-            <span>确认发布</span>
+            <span id="publishSubmitLabel">确认发布</span>
           </button>
         </div>
       </form>

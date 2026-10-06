@@ -14,6 +14,8 @@ const App = {
 
   currentDetailItem: null,
   uploadedImageBase64: '',
+  editingItemId: null,
+  returnToMyPosts: false,
 
   /**
    * 应用初始化
@@ -408,17 +410,61 @@ const App = {
   /**
    * 打开与关闭发布模态框
    */
-  openPublishModal() {
+  openPublishModal(editingItemId = null) {
+    document.getElementById('publishForm').reset();
+    this.removeUploadedImage();
+    this.onFormTypeChange('lost');
+    document.getElementById('formDate').value = new Date().toISOString().split('T')[0];
+    this.editingItemId = editingItemId;
+    const editingItem = editingItemId ? DataManager.getItemById(editingItemId) : null;
+    if (editingItemId && (!editingItem || !editingItem.isMine)) {
+      this.showToast('只能编辑自己发布的信息', 'info');
+      this.editingItemId = null;
+      return;
+    }
+
     document.getElementById('publishModal').classList.remove('hidden');
     document.getElementById('formErrorNotice').classList.add('hidden');
+
+    const title = document.getElementById('publishModalTitle');
+    const submitLabel = document.getElementById('publishSubmitLabel');
+    if (title) title.innerText = editingItem ? '编辑失物 / 招领信息' : '发布失物 / 招领信息';
+    if (submitLabel) submitLabel.innerText = editingItem ? '保存修改' : '确认发布';
+
+    if (editingItem) {
+      const typeRadio = document.querySelector(`input[name="formType"][value="${editingItem.type}"]`);
+      if (typeRadio) typeRadio.checked = true;
+      document.getElementById('formTitle').value = editingItem.title || '';
+      document.getElementById('formCategory').value = editingItem.category || '其他物品';
+      document.getElementById('formDate').value = editingItem.date || '';
+      document.getElementById('formLocation').value = editingItem.location || '';
+      document.getElementById('formDesc').value = editingItem.desc || '';
+      document.getElementById('formContactType').value = editingItem.contactType || '微信';
+      document.getElementById('formContactVal').value = editingItem.contactVal || '';
+      this.uploadedImageBase64 = editingItem.img || '';
+      if (editingItem.img) {
+        document.getElementById('imagePreview').src = editingItem.img;
+        document.getElementById('imagePreviewBox').classList.remove('hidden');
+      }
+      this.onFormTypeChange(editingItem.type);
+    }
   },
 
   closePublishModal() {
+    const returnToMyPosts = this.returnToMyPosts;
+    this.returnToMyPosts = false;
     document.getElementById('publishModal').classList.add('hidden');
     document.getElementById('publishForm').reset();
     this.removeUploadedImage();
+    this.editingItemId = null;
+    const title = document.getElementById('publishModalTitle');
+    const submitLabel = document.getElementById('publishSubmitLabel');
+    if (title) title.innerText = '发布失物 / 招领信息';
+    if (submitLabel) submitLabel.innerText = '确认发布';
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('formDate').value = today;
+    this.onFormTypeChange('lost');
+    if (returnToMyPosts) this.openMyPostsModal();
   },
 
   onFormTypeChange(type) {
@@ -477,7 +523,7 @@ const App = {
     const contactType = document.getElementById('formContactType').value;
     const contactVal = document.getElementById('formContactVal').value;
 
-    const newItemPayload = {
+    const itemPayload = {
       type,
       title,
       category,
@@ -486,12 +532,11 @@ const App = {
       desc,
       contactType,
       contactVal,
-      img: this.uploadedImageBase64 || this.getDefaultImageForCategory(category),
-      publisherName: '我发布的'
+      img: this.uploadedImageBase64
     };
 
     // 白盒严格校验
-    const validation = Utils.validateItem(newItemPayload);
+    const validation = Utils.validateItem(itemPayload);
     const errorNotice = document.getElementById('formErrorNotice');
 
     if (!validation.isValid) {
@@ -502,14 +547,33 @@ const App = {
 
     errorNotice.classList.add('hidden');
 
-    // 存储新数据
-    const created = DataManager.addItem(newItemPayload);
+    const wasEditing = Boolean(this.editingItemId);
+    let updatedItem;
+    if (wasEditing) {
+      const updated = DataManager.updateItem(this.editingItemId, itemPayload);
+      if (!updated) {
+        this.showToast('保存失败，请稍后重试', 'error');
+        return;
+      }
+      updatedItem = DataManager.getItemById(this.editingItemId);
+      this.showToast('修改成功，信息已更新', 'success');
+    } else {
+      itemPayload.img = itemPayload.img || this.getDefaultImageForCategory(category);
+      itemPayload.publisherName = '我发布的';
+      updatedItem = DataManager.addItem(itemPayload);
+      this.showToast('🎉 发布成功！已在首页最上方置顶显示', 'success');
+    }
 
-    this.showToast('🎉 发布成功！已在首页最上方置顶显示', 'success');
     this.closePublishModal();
 
     // 切换到对应 Tab 并刷新
-    this.setTypeFilter(created.type);
+    this.setTypeFilter(updatedItem.type);
+    if (wasEditing && this.currentDetailItem && this.currentDetailItem.id === updatedItem.id) {
+      this.openDetail(updatedItem.id);
+    }
+    if (!document.getElementById('myPostsModal').classList.contains('hidden')) {
+      this.renderMyPosts();
+    }
   },
 
   /**
@@ -532,6 +596,17 @@ const App = {
   openMyPostsModal() {
     this.renderMyPosts();
     document.getElementById('myPostsModal').classList.remove('hidden');
+  },
+
+  openEditModal(id) {
+    const item = DataManager.getItemById(id);
+    if (!item || !item.isMine) {
+      this.showToast('只能编辑自己发布的信息', 'info');
+      return;
+    }
+    this.closeMyPostsModal();
+    this.returnToMyPosts = true;
+    this.openPublishModal(id);
   },
 
   closeMyPostsModal() {
@@ -557,7 +632,7 @@ const App = {
     }
 
     list.innerHTML = myItems.map(item => `
-      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${item.type === 'lost' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
@@ -569,7 +644,7 @@ const App = {
             </span>
           </div>
           <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
-            <span>${item.location}</span>
+            <span>${Utils.escapeHtml(item.location)}</span>
             <span>·</span>
             <span>${Utils.timeAgo(item.timestamp || item.date)}</span>
           </div>
@@ -578,6 +653,9 @@ const App = {
         <div class="flex items-center gap-1.5 shrink-0">
           <button onclick="App.openDetail(${item.id})" class="px-2.5 py-1 text-slate-600 hover:text-emerald-700 font-semibold hover:bg-white rounded-lg transition">
             查看
+          </button>
+          <button onclick="App.openEditModal(${item.id})" class="px-2.5 py-1 text-blue-600 hover:text-blue-700 hover:bg-white rounded-lg transition font-semibold">
+            编辑
           </button>
           ${item.status !== 'solved' ? `
             <button onclick="App.markItemSolved(${item.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition text-xs shadow-sm">
