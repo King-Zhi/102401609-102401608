@@ -308,8 +308,8 @@
               </button>
             </div>
             <div class="text-[11px] text-slate-400 space-y-0.5">
-              <p>支持 PNG、JPG、WEBP 格式图片</p>
-              <p>单张图片不超过 2MB</p>
+              <p>支持 PNG、JPG、WEBP 格式图片（不超过 2MB）</p>
+              <p class="text-slate-500">未上传时展示“暂无实物图片”，不会强行套用其他物品图</p>
             </div>
           </div>
         </div>
@@ -349,6 +349,13 @@
       <!-- 头部大图 -->
       <div class="relative h-60 bg-slate-100 overflow-hidden">
         <img id="detailImg" src="" class="w-full h-full object-cover">
+        <div id="detailNoImgPlaceholder" class="hidden w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/90 text-slate-400 select-none">
+          <div class="w-12 h-12 rounded-2xl bg-white/90 shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-400 mb-2">
+            <i class="fa-solid fa-camera-retro text-xl"></i>
+          </div>
+          <span class="text-sm font-semibold text-slate-600">暂无实物图片</span>
+          <span class="text-xs text-slate-400 mt-0.5">发布者未上传现场或实物照片</span>
+        </div>
         <button onclick="App.closeDetailModal()" class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm transition">
           <i class="fa-solid fa-xmark"></i>
         </button>

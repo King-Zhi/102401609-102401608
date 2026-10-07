@@ -161,6 +161,12 @@ const DataManager = {
               it.img = 'assets/images/item_1006_bottle.jpg';
               hasUpgrade = true;
             }
+
+            // 自动修正旧版本中用户自发物品因 bug 误赋予的预设示例图片
+            if (it.isMine && typeof it.img === 'string' && it.img.startsWith('assets/images/')) {
+              it.img = '';
+              hasUpgrade = true;
+            }
           });
           if (hasUpgrade) {
             this.saveItems(parsed);

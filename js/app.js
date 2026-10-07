@@ -105,8 +105,19 @@ const App = {
     // 相对时间展示
     const timeText = Utils.timeAgo(item.timestamp || item.date);
 
-    // 默认或预设实物图片
-    const imgSrc = item.img || 'assets/images/item_1001_card.jpg';
+    // 实物图片展示或无图优雅占位
+    const hasImage = Boolean(item.img && item.img.trim());
+    const imageContent = hasImage ? `
+      <img src="${item.img}" loading="lazy" alt="${Utils.escapeHtml(item.title)}" class="w-full h-full object-cover">
+    ` : `
+      <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/80 text-slate-400 select-none">
+        <div class="w-10 h-10 rounded-2xl bg-white/90 shadow-sm border border-slate-200/70 flex items-center justify-center text-slate-400 mb-1.5">
+          <i class="fa-solid fa-camera-retro text-base"></i>
+        </div>
+        <span class="text-xs font-semibold text-slate-500">暂无实物图片</span>
+        <span class="text-[10px] text-slate-400 mt-0.5">发布者未上传照片</span>
+      </div>
+    `;
 
     return `
       <div onclick="App.openDetail(${item.id})" class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-sm card-hover flex flex-col justify-between cursor-pointer space-y-3">
@@ -114,7 +125,7 @@ const App = {
         <div class="space-y-3">
           <!-- 图片与顶部状态条 -->
           <div class="relative h-44 rounded-2xl overflow-hidden bg-slate-100 img-placeholder">
-            <img src="${imgSrc}" loading="lazy" alt="${Utils.escapeHtml(item.title)}" class="w-full h-full object-cover">
+            ${imageContent}
             <div class="absolute top-3 left-3 flex items-center gap-1.5">
               ${typeBadge}
               <span class="bg-black/50 text-white backdrop-blur-md text-[10px] px-2 py-0.5 rounded-md font-medium">${Utils.escapeHtml(item.category)}</span>
@@ -271,7 +282,29 @@ const App = {
     this.currentDetailItem = item;
 
     document.getElementById('detailTitle').innerText = item.title;
-    document.getElementById('detailImg').src = item.img || 'assets/images/item_1001_card.jpg';
+
+    const detailImg = document.getElementById('detailImg');
+    const noImgPlaceholder = document.getElementById('detailNoImgPlaceholder');
+    if (item.img && item.img.trim()) {
+      if (detailImg) {
+        detailImg.src = item.img;
+        detailImg.classList.remove('hidden');
+      }
+      if (noImgPlaceholder) {
+        noImgPlaceholder.classList.add('hidden');
+        noImgPlaceholder.classList.remove('flex');
+      }
+    } else {
+      if (detailImg) {
+        detailImg.src = '';
+        detailImg.classList.add('hidden');
+      }
+      if (noImgPlaceholder) {
+        noImgPlaceholder.classList.remove('hidden');
+        noImgPlaceholder.classList.add('flex');
+      }
+    }
+
     document.getElementById('detailCategoryBadge').innerText = item.category;
     document.getElementById('detailLocation').innerText = item.location;
     document.getElementById('detailDate').innerText = item.date;
@@ -344,6 +377,8 @@ const App = {
 
   closeDetailModal() {
     document.getElementById('detailModal').classList.add('hidden');
+    const detailImg = document.getElementById('detailImg');
+    if (detailImg) detailImg.src = '';
     this.currentDetailItem = null;
   },
 
@@ -643,7 +678,7 @@ const App = {
         updatedItem = DataManager.getItemById(this.editingItemId);
         this.showToast('修改成功，信息已更新', 'success');
       } else {
-        itemPayload.img = itemPayload.img || this.getDefaultImageForCategory(category);
+        itemPayload.img = this.uploadedImageBase64 || '';
         itemPayload.publisherName = '我发布的';
         updatedItem = DataManager.addItem(itemPayload);
         if (!updatedItem) {

@@ -185,6 +185,12 @@ const cases = [
     h.submit();
     assert.equal(calls, 1);
     assert.equal(h.saved.length, 1);
+  }],
+  ['unuploaded image publishes with empty string instead of default image', h => {
+    h.app.uploadedImageBase64 = '';
+    h.submit();
+    assert.equal(h.saved.length, 1);
+    assert.equal(h.saved[0].img, '');
   }]
 ];
 

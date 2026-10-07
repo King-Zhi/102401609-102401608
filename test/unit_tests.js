@@ -672,6 +672,65 @@ const UnitTests = [
       assert.isTrue(highlighted.includes('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">数</mark>'), '字符“数”应被 mark 标签包裹');
       assert.strictEqual(highlighted.replace(/<mark[^>]*>|<\/mark>/g, ''), targetText, '剥离 mark 标签后文本必须与原内容一致');
     }
+  },
+
+  {
+    name: '测试用例 46: 用户新发布物品未上传图片时应保留空字符串，不误赋预设示例图且历史误赋数据自动修复',
+    category: '发布管理测试 (addItem & getItems)',
+    description: '验证当用户未上传实物照片时，新发布记录的 img 字段严格保持为空字符串，不误用 AirPods 等示例图；且历史数据中被误赋预设示例图的用户记录能自动清洗修复。',
+    testFn(assert, storage) {
+      // 1. 添加未上传图片的记录，验证 img 不会被默认赋值为示例图
+      const newItem = DataManager.addItem({
+        type: 'lost',
+        title: '黑色华为手机',
+        category: '数码电子',
+        location: '旗山校区图书馆二楼',
+        date: '2026-10-08',
+        contactType: '手机号',
+        contactVal: '13800000000',
+        img: ''
+      });
+      assert.isTrue(Boolean(newItem), '新物品应成功添加');
+      assert.strictEqual(newItem.img, '', '未上传图片时 img 应严格保持为空字符串');
+
+      // 2. 验证针对历史用户记录的自动清洗修复
+      const corruptedUserList = [
+        {
+          id: 2001,
+          type: 'lost',
+          title: '遗失的白色手机',
+          category: '数码电子',
+          location: '一区食堂',
+          date: '2026-10-07',
+          contactType: '微信',
+          contactVal: 'wx_test',
+          img: 'assets/images/item_1002_airpods.jpg',
+          isMine: true
+        },
+        {
+          id: 1002,
+          type: 'lost',
+          title: '预设AirPods',
+          category: '数码电子',
+          location: '公共教学楼',
+          date: '2026-10-01',
+          contactType: '微信',
+          contactVal: 'wx_preset',
+          img: 'assets/images/item_1002_airpods.jpg',
+          isMine: false
+        }
+      ];
+      const storageKey = typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'CAMPUS_LOST_FOUND_ITEMS_V3';
+      storage.setItem(storageKey, JSON.stringify(corruptedUserList));
+
+      const repaired = DataManager.getItems();
+      const repairedUserItem = repaired.find(it => it.id === 2001);
+      const presetItem = repaired.find(it => it.id === 1002);
+
+      assert.isTrue(Boolean(repairedUserItem), '应存在历史用户发布项');
+      assert.strictEqual(repairedUserItem.img, '', '用户发布的历史记录中的示例图片应被自动清洗为空');
+      assert.strictEqual(presetItem.img, 'assets/images/item_1002_airpods.jpg', '系统预设记录的图片不受影响');
+    }
   }
 ];
 
