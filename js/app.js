@@ -16,6 +16,10 @@ const App = {
   uploadedImageBase64: '',
   editingItemId: null,
   returnToMyPosts: false,
+  imageReadRequest: 0,
+  imageReader: null,
+  isImageLoading: false,
+  isSubmitting: false,
 
   /**
    * 应用初始化
@@ -438,9 +442,8 @@ const App = {
     document.getElementById('formErrorNotice').classList.add('hidden');
 
     const title = document.getElementById('publishModalTitle');
-    const submitLabel = document.getElementById('publishSubmitLabel');
     if (title) title.innerText = editingItem ? '编辑失物 / 招领信息' : '发布失物 / 招领信息';
-    if (submitLabel) submitLabel.innerText = editingItem ? '保存修改' : '确认发布';
+    this.updatePublishButton();
 
     if (editingItem) {
       const typeRadio = document.querySelector(`input[name="formType"][value="${editingItem.type}"]`);
@@ -468,6 +471,8 @@ const App = {
     document.getElementById('publishForm').reset();
     this.removeUploadedImage();
     this.editingItemId = null;
+    this.isSubmitting = false;
+    this.updatePublishButton();
     const title = document.getElementById('publishModalTitle');
     const submitLabel = document.getElementById('publishSubmitLabel');
     if (title) title.innerText = '发布失物 / 招领信息';
@@ -495,23 +500,87 @@ const App = {
    * 处理本地实物图片上传并转 Base64 存储
    */
   handleImageUpload(input) {
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      if (file.size > 2 * 1024 * 1024) {
-        alert('为了保证运行速度，建议选择 2MB 以内的图片');
-      }
+    this.cancelImageRead();
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const validation = Utils.validateImageFile(file);
+    if (!validation.isValid) {
+      input.value = '';
+      this.showToast(validation.message, 'error');
+      return;
+    }
+
+    const request = this.imageReadRequest;
+    this.isImageLoading = true;
+    this.updatePublishButton();
+    const fail = () => {
+      if (request !== this.imageReadRequest) return;
+      this.imageReadRequest++;
+      this.imageReader = null;
+      this.isImageLoading = false;
+      input.value = '';
+      this.updatePublishButton();
+      this.showToast('图片读取失败或内容损坏，请重新选择；原图片未更改', 'error');
+    };
+    try {
       const reader = new FileReader();
+      this.imageReader = reader;
+      reader.onerror = fail;
+      reader.onabort = fail;
       reader.onload = (e) => {
-        this.uploadedImageBase64 = e.target.result;
-        document.getElementById('imagePreview').src = e.target.result;
-        document.getElementById('imagePreviewBox').classList.remove('hidden');
+        if (request !== this.imageReadRequest) return;
+        const result = e.target.result;
+        if (typeof result !== 'string' || !result.startsWith('data:image/')) {
+          fail();
+          return;
+        }
+        try {
+          const image = new Image();
+          image.onerror = fail;
+          image.onload = () => {
+            if (request !== this.imageReadRequest) return;
+            if (!image.naturalWidth || !image.naturalHeight) { fail(); return; }
+            this.uploadedImageBase64 = result;
+            document.getElementById('imagePreview').src = result;
+            document.getElementById('imagePreviewBox').classList.remove('hidden');
+            this.imageReadRequest++;
+            this.imageReader = null;
+            this.isImageLoading = false;
+            this.updatePublishButton();
+          };
+          image.src = result;
+        } catch (error) {
+          fail();
+        }
       };
       reader.readAsDataURL(file);
+    } catch (error) {
+      fail();
     }
   },
 
+  cancelImageRead() {
+    this.imageReadRequest++;
+    const reader = this.imageReader;
+    this.imageReader = null;
+    this.isImageLoading = false;
+    if (reader && reader.readyState === 1) reader.abort();
+    this.updatePublishButton();
+  },
+
+  updatePublishButton() {
+    const button = document.getElementById('publishSubmitButton');
+    const label = document.getElementById('publishSubmitLabel');
+    if (button) button.disabled = this.isSubmitting || this.isImageLoading;
+    if (label) label.innerText = this.isSubmitting ? '正在保存…' :
+      this.isImageLoading ? '正在读取图片…' : this.editingItemId ? '保存修改' : '确认发布';
+  },
+
   removeUploadedImage() {
+    this.cancelImageRead();
     this.uploadedImageBase64 = '';
+    const preview = document.getElementById('imagePreview');
+    if (preview) preview.removeAttribute('src');
     const fileInput = document.getElementById('formImageFile');
     if (fileInput) fileInput.value = '';
     const box = document.getElementById('imagePreviewBox');
@@ -523,6 +592,8 @@ const App = {
    */
   handlePublishSubmit(e) {
     e.preventDefault();
+    if (this.isSubmitting || this.isImageLoading ||
+        document.getElementById('publishModal').classList.contains('hidden')) return;
 
     const typeRadio = document.querySelector('input[name="formType"]:checked');
     const type = typeRadio ? typeRadio.value : 'lost';
@@ -558,37 +629,43 @@ const App = {
     }
 
     errorNotice.classList.add('hidden');
-
-    const wasEditing = Boolean(this.editingItemId);
-    let updatedItem;
-    if (wasEditing) {
-      const updated = DataManager.updateItem(this.editingItemId, itemPayload);
-      if (!updated) {
-        this.showToast('保存失败，请稍后重试', 'error');
-        return;
+    this.isSubmitting = true;
+    this.updatePublishButton();
+    try {
+      const wasEditing = Boolean(this.editingItemId);
+      let updatedItem;
+      if (wasEditing) {
+        const updated = DataManager.updateItem(this.editingItemId, itemPayload);
+        if (!updated) {
+          this.showToast('保存失败，请稍后重试', 'error');
+          return;
+        }
+        updatedItem = DataManager.getItemById(this.editingItemId);
+        this.showToast('修改成功，信息已更新', 'success');
+      } else {
+        itemPayload.img = itemPayload.img || this.getDefaultImageForCategory(category);
+        itemPayload.publisherName = '我发布的';
+        updatedItem = DataManager.addItem(itemPayload);
+        if (!updatedItem) {
+          this.showToast('发布失败，浏览器存储空间可能不足，请减少图片大小后重试', 'error');
+          return;
+        }
+        this.showToast('🎉 发布成功！已在首页最上方置顶显示', 'success');
       }
-      updatedItem = DataManager.getItemById(this.editingItemId);
-      this.showToast('修改成功，信息已更新', 'success');
-    } else {
-      itemPayload.img = itemPayload.img || this.getDefaultImageForCategory(category);
-      itemPayload.publisherName = '我发布的';
-      updatedItem = DataManager.addItem(itemPayload);
-      if (!updatedItem) {
-        this.showToast('发布失败，浏览器存储空间可能不足，请减少图片大小后重试', 'error');
-        return;
+
+      this.closePublishModal();
+
+      // 切换到对应 Tab 并刷新
+      this.setTypeFilter(updatedItem.type);
+      if (wasEditing && this.currentDetailItem && this.currentDetailItem.id === updatedItem.id) {
+        this.openDetail(updatedItem.id);
       }
-      this.showToast('🎉 发布成功！已在首页最上方置顶显示', 'success');
-    }
-
-    this.closePublishModal();
-
-    // 切换到对应 Tab 并刷新
-    this.setTypeFilter(updatedItem.type);
-    if (wasEditing && this.currentDetailItem && this.currentDetailItem.id === updatedItem.id) {
-      this.openDetail(updatedItem.id);
-    }
-    if (!document.getElementById('myPostsModal').classList.contains('hidden')) {
-      this.renderMyPosts();
+      if (!document.getElementById('myPostsModal').classList.contains('hidden')) {
+        this.renderMyPosts();
+      }
+    } finally {
+      this.isSubmitting = false;
+      this.updatePublishButton();
     }
   },
 

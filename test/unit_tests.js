@@ -573,6 +573,64 @@ const UnitTests = [
         assert.strictEqual(JSON.stringify(DataManager.getItemById(1001)), before);
       });
     }
+  },
+  {
+    name: '测试用例 39: 图片类型与扩展名一致',
+    category: '图片校验测试 (validateImageFile)',
+    description: '支持 PNG、JPG、JPEG、WEBP，拒绝其他类型和不匹配的扩展名。',
+    testFn(assert) {
+      [['card.png', 'image/png'], ['card.jpg', 'image/jpeg'], ['card.jpeg', 'image/jpeg'], ['card.webp', 'image/webp']]
+        .forEach(([name, type]) => assert.isTrue(Utils.validateImageFile({ name, type, size: 100 }).isValid));
+      [['card.svg', 'image/svg+xml'], ['script.png', 'text/html'], ['card.exe', 'image/png'], ['card.jpg', 'image/png']]
+        .forEach(([name, type]) => assert.isFalse(Utils.validateImageFile({ name, type, size: 100 }).isValid));
+    }
+  },
+  {
+    name: '测试用例 40: 图片大小不能超过 2MB',
+    category: '图片边界测试 (validateImageFile)',
+    description: '接受非空且不超过 2MB 的文件，拒绝空文件、超限文件和非法大小。',
+    testFn(assert) {
+      const file = { name: 'card.jpg', type: 'image/jpeg' };
+      [1, 2 * 1024 * 1024].forEach(size => assert.isTrue(Utils.validateImageFile({ ...file, size }).isValid));
+      [0, -1, NaN, Infinity, '100', 2 * 1024 * 1024 + 1].forEach(size => assert.isFalse(Utils.validateImageFile({ ...file, size }).isValid));
+    }
+  },
+  {
+    name: '测试用例 41: 图片字段缺失时安全拒绝',
+    category: '图片异常测试 (validateImageFile)',
+    description: '拒绝空值、缺少 MIME 或名称的文件，不进入读取流程。',
+    testFn(assert) {
+      [null, undefined, {}, { name: 'card.jpg' }, { type: 'image/jpeg', size: 100 }, { name: 1, type: 'image/png', size: 100 }]
+        .forEach(file => assert.isFalse(Utils.validateImageFile(file).isValid));
+    }
+  },
+  {
+    name: '测试用例 42: 图片扩展名忽略大小写',
+    category: '图片兼容性测试 (validateImageFile)',
+    description: '大写 JPEG、PNG、WEBP 后缀和小写后缀保持相同规则。',
+    testFn(assert) {
+      [['CARD.JPEG', 'image/jpeg'], ['CARD.PNG', 'image/png'], ['CARD.WEBP', 'image/webp']]
+        .forEach(([name, type]) => assert.isTrue(Utils.validateImageFile({ name, type, size: 100 }).isValid));
+    }
+  },
+  {
+    name: '测试用例 43: 同一毫秒创建记录时 ID 不重复',
+    category: '发布边界测试 (DataManager.addItem)',
+    description: '连续发布使用相同时间戳时避让已有 ID，保留真实发布时间。',
+    testFn(assert) {
+      const originalNow = Date.now;
+      Date.now = () => 1700000000000;
+      try {
+        const first = DataManager.addItem({ ...initialMockData[0], title: '同毫秒记录一' });
+        const second = DataManager.addItem({ ...initialMockData[0], title: '同毫秒记录二' });
+        assert.isFalse(first.id === second.id);
+        assert.strictEqual(DataManager.getItemById(first.id).title, '同毫秒记录一');
+        assert.strictEqual(DataManager.getItemById(second.id).title, '同毫秒记录二');
+        assert.strictEqual(first.timestamp, second.timestamp);
+      } finally {
+        Date.now = originalNow;
+      }
+    }
   }
 ];
 

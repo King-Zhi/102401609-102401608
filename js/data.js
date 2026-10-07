@@ -158,10 +158,13 @@ const DataManager = {
    */
   addItem(rawItem) {
     const items = this.getItems();
+    const timestamp = Date.now();
+    let id = timestamp;
+    while (items.some(item => String(item.id) === String(id))) id++;
     const newItem = {
       ...rawItem,
-      id: Date.now(),
-      timestamp: Date.now(),
+      id,
+      timestamp,
       status: 'open',
       isMine: true,
       publisherName: rawItem.publisherName || '我发布的信息'

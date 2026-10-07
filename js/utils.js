@@ -4,6 +4,25 @@
  */
 
 const Utils = {
+  validateImageFile(file) {
+    const extensions = {
+      'image/png': /\.png$/i,
+      'image/jpeg': /\.jpe?g$/i,
+      'image/webp': /\.webp$/i
+    };
+    if (!file || !Object.prototype.hasOwnProperty.call(extensions, file.type) ||
+        typeof file.name !== 'string' || !extensions[file.type].test(file.name)) {
+      return { isValid: false, message: '请选择 PNG、JPG 或 WEBP 格式的图片' };
+    }
+    if (!Number.isFinite(file.size) || file.size <= 0) {
+      return { isValid: false, message: '图片文件为空或无法读取，请重新选择' };
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      return { isValid: false, message: '图片不能超过 2MB，请选择较小的图片' };
+    }
+    return { isValid: true, message: '' };
+  },
+
   formatLocalDate(date = new Date()) {
     const year = String(date.getFullYear()).padStart(4, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
