@@ -153,13 +153,11 @@ const Utils = {
         return false;
       }
 
-      // 5. 关键词模糊检索（匹配标题、描述、地点）
+      // 5. 关键词多维度智能模糊匹配（支持直接包含、校园简称与子序列模糊）
       if (kw) {
-        const titleMatch = (item.title || '').toLowerCase().includes(kw);
-        const descMatch = (item.desc || '').toLowerCase().includes(kw);
-        const locMatch = (item.location || '').toLowerCase().includes(kw);
-        const catMatch = (item.category || '').toLowerCase().includes(kw);
-        if (!titleMatch && !descMatch && !locMatch && !catMatch) {
+        const fields = [item.title, item.desc, item.location, item.category];
+        const hasMatch = fields.some(field => this.matchKeyword(field, kw));
+        if (!hasMatch) {
           return false;
         }
       }
@@ -169,7 +167,68 @@ const Utils = {
   },
 
   /**
-   * 搜索关键词高亮显示
+   * 智能模糊匹配算法
+   * 支持：直接连续包含、校园常用课程与物品简称映射、子序列模糊匹配（如“高数”匹配“高等数学”）
+   * @param {string} text 目标字段文本
+   * @param {string} keyword 搜索词
+   * @returns {boolean} 是否命中
+   */
+  matchKeyword(text, keyword) {
+    if (!text || typeof text !== 'string') return false;
+    if (!keyword || typeof keyword !== 'string') return false;
+
+    const src = text.toLowerCase();
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return true;
+
+    // 1. 直接包含（最高优先级，精准匹配）
+    if (src.includes(kw)) return true;
+
+    // 2. 校园专属常用简称与近义词库（如“高数”对应“高等数学”）
+    const aliasMap = {
+      '高数': ['高等数学', '数学'],
+      '高等数学': ['高数'],
+      '线代': ['线性代数'],
+      '大物': ['大学物理'],
+      '马原': ['马克思'],
+      '毛概': ['毛泽东思想'],
+      '思修': ['思想道德'],
+      '一卡通': ['校园卡', '学生卡', '卡'],
+      '饭卡': ['校园卡', '学生卡', '卡'],
+      '学生卡': ['校园卡', '一卡通', '饭卡'],
+      '校园卡': ['学生卡', '一卡通', '饭卡'],
+      '耳机': ['airpods', '蓝牙耳机', '耳机'],
+      '雨伞': ['折叠伞', '晴雨伞', '雨伞'],
+      '折叠伞': ['雨伞', '晴雨伞'],
+      '钥匙': ['宿舍钥匙', '门禁钥匙'],
+      '水杯': ['保温杯', '水杯', '保温水杯'],
+      '保温杯': ['水杯', '膳魔师', '保温水杯']
+    };
+
+    for (const [key, aliases] of Object.entries(aliasMap)) {
+      if (kw === key || kw.includes(key)) {
+        if (aliases.some(alias => src.includes(alias))) return true;
+      }
+      if (aliases.includes(kw) && src.includes(key)) return true;
+    }
+
+    // 3. 字符子序列模糊匹配（每个字符按序在原文中出现，如“高数”命中“高等数学第七版”）
+    const chars = [...kw].filter(c => c.trim().length > 0);
+    if (chars.length >= 2) {
+      let pIndex = 0;
+      for (let i = 0; i < src.length; i++) {
+        if (src[i] === chars[pIndex]) {
+          pIndex++;
+          if (pIndex === chars.length) return true;
+        }
+      }
+    }
+
+    return false;
+  },
+
+  /**
+   * 搜索关键词高亮显示（支持连续匹配与模糊子序列高亮）
    * @param {string} text 原始文本
    * @param {string} keyword 关键词
    * @returns {string} 包含 <mark> 标签的 HTML 安全文本
@@ -180,19 +239,56 @@ const Utils = {
       return this.escapeHtml(text);
     }
 
-    const safeKw = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const cleanKw = keyword.trim();
+    const safeKw = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(safeKw, 'gi');
     const parts = [];
     let lastIndex = 0;
+    let hasExactMatch = false;
+
     // 在原文中查找，再分别转义匹配片段和普通片段，不拆开 HTML 实体。
     for (const match of text.matchAll(regex)) {
+      hasExactMatch = true;
       parts.push(this.escapeHtml(text.slice(lastIndex, match.index)));
       parts.push('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">' +
         this.escapeHtml(match[0]) + '</mark>');
       lastIndex = match.index + match[0].length;
     }
-    parts.push(this.escapeHtml(text.slice(lastIndex)));
-    return parts.join('');
+
+    if (hasExactMatch) {
+      parts.push(this.escapeHtml(text.slice(lastIndex)));
+      return parts.join('');
+    }
+
+    // 若无整词连续命中，则对子序列模糊匹配（如“高数”在“高等数学”中）高亮命中的单个字符
+    const kwChars = [...cleanKw.toLowerCase()].filter(c => c.trim().length > 0);
+    if (kwChars.length >= 2) {
+      const srcLower = text.toLowerCase();
+      const matchedIndices = new Set();
+      let pIdx = 0;
+      for (let i = 0; i < text.length; i++) {
+        if (srcLower[i] === kwChars[pIdx]) {
+          matchedIndices.add(i);
+          pIdx++;
+          if (pIdx === kwChars.length) break;
+        }
+      }
+
+      if (pIdx === kwChars.length) {
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          if (matchedIndices.has(i)) {
+            result += '<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">' + this.escapeHtml(char) + '</mark>';
+          } else {
+            result += this.escapeHtml(char);
+          }
+        }
+        return result;
+      }
+    }
+
+    return this.escapeHtml(text);
   },
 
   /**

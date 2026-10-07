@@ -631,6 +631,47 @@ const UnitTests = [
         Date.now = originalNow;
       }
     }
+  },
+
+  {
+    name: '测试用例 44: 校园常用简称与子序列模糊匹配检索（如“高数”匹配“高等数学”）',
+    category: '智能模糊检索测试 (filterItems & matchKeyword)',
+    description: '验证当搜索课程简称如“高数”时能匹配到《高等数学第七版》，搜索“饭卡”能匹配到“学生卡”，搜索“操场钥匙”能跨词匹配。',
+    testFn(assert) {
+      const mockList = [
+        { id: 101, title: '文科楼中庭石桌拾获《高等数学第七版》下册', desc: '高数书内有笔记', location: '文科楼中庭', category: '书籍文具', type: 'found', status: 'open' },
+        { id: 102, title: '一区食堂二楼水吧捡到一张学生卡', desc: '黑色卡套', location: '一区食堂', category: '校园卡/证件', type: 'found', status: 'open' },
+        { id: 103, title: '风雨操场草坪遗落一串宿舍钥匙', desc: '含自行车钥匙', location: '风雨操场草坪', category: '生活钥匙', type: 'lost', status: 'open' }
+      ];
+
+      // 1. 缩写/子序列检索“高数”
+      const resMath = Utils.filterItems(mockList, { keyword: '高数' });
+      assert.strictEqual(resMath.length, 1, '高数应精准命中高等数学');
+      assert.strictEqual(resMath[0].id, 101, '命中的记录 ID 应为 101');
+
+      // 2. 校园同义词“饭卡”匹配“学生卡”
+      const resCard = Utils.filterItems(mockList, { keyword: '饭卡' });
+      assert.strictEqual(resCard.length, 1, '饭卡应匹配到学生卡');
+      assert.strictEqual(resCard[0].id, 102, '命中的记录 ID 应为 102');
+
+      // 3. 跨词组合子序列“操场钥匙”
+      const resKey = Utils.filterItems(mockList, { keyword: '操场钥匙' });
+      assert.strictEqual(resKey.length, 1, '操场钥匙应匹配到风雨操场宿舍钥匙');
+      assert.strictEqual(resKey[0].id, 103, '命中的记录 ID 应为 103');
+    }
+  },
+
+  {
+    name: '测试用例 45: 子序列模糊匹配精准字符高亮与防 XSS 渲染',
+    category: '智能模糊高亮测试 (highlightKeyword)',
+    description: '当使用非连续关键词（如“高数”）匹配“高等数学”时，高亮命中的单个字符且不破坏 HTML 安全实体。',
+    testFn(assert) {
+      const targetText = '文科楼拾获《高等数学第七版》下册';
+      const highlighted = Utils.highlightKeyword(targetText, '高数');
+      assert.isTrue(highlighted.includes('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">高</mark>'), '字符“高”应被 mark 标签包裹');
+      assert.isTrue(highlighted.includes('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">数</mark>'), '字符“数”应被 mark 标签包裹');
+      assert.strictEqual(highlighted.replace(/<mark[^>]*>|<\/mark>/g, ''), targetText, '剥离 mark 标签后文本必须与原内容一致');
+    }
   }
 ];
 
