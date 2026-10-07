@@ -4,12 +4,20 @@
  */
 
 const Utils = {
+  formatLocalDate(date = new Date()) {
+    const year = String(date.getFullYear()).padStart(4, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
   /**
    * 表单与物品数据校验
    * @param {Object} item 物品对象
+   * @param {Date} today 参考日期，默认使用浏览器本地日期
    * @returns {Object} { isValid: boolean, errors: string[] }
    */
-  validateItem(item) {
+  validateItem(item, today = new Date()) {
     const errors = [];
     if (!item || typeof item !== 'object') {
       return { isValid: false, errors: ['数据对象为空或格式非法'] };
@@ -46,9 +54,17 @@ const Utils = {
       errors.push('地点描述不能超过50个字符');
     }
 
-    // 发生日期校验：必填合法的日期
-    if (!item.date || isNaN(Date.parse(item.date))) {
+    const dateParts = typeof item.date === 'string' && /^(\d{4})-(\d{2})-(\d{2})$/.exec(item.date);
+    const calendarDate = dateParts ? new Date(item.date + 'T00:00:00Z') : null;
+    // 回查年月日，防止 Date 将二月三十日等非法日期自动进位。
+    const validDate = dateParts && Number(dateParts[1]) >= 1 &&
+      calendarDate.getUTCFullYear() === Number(dateParts[1]) &&
+      calendarDate.getUTCMonth() + 1 === Number(dateParts[2]) &&
+      calendarDate.getUTCDate() === Number(dateParts[3]);
+    if (!validDate) {
       errors.push('发生时间必须是有效的日期');
+    } else if (item.date > this.formatLocalDate(today)) {
+      errors.push('遗失或拾获日期不能晚于今天');
     }
 
     // 联系方式校验：必填，微信号/QQ/手机号格式合规
@@ -146,9 +162,18 @@ const Utils = {
     }
 
     const safeKw = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${safeKw})`, 'gi');
-    const escaped = this.escapeHtml(text);
-    return escaped.replace(regex, '<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">$1</mark>');
+    const regex = new RegExp(safeKw, 'gi');
+    const parts = [];
+    let lastIndex = 0;
+    // 在原文中查找，再分别转义匹配片段和普通片段，不拆开 HTML 实体。
+    for (const match of text.matchAll(regex)) {
+      parts.push(this.escapeHtml(text.slice(lastIndex, match.index)));
+      parts.push('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">' +
+        this.escapeHtml(match[0]) + '</mark>');
+      lastIndex = match.index + match[0].length;
+    }
+    parts.push(this.escapeHtml(text.slice(lastIndex)));
+    return parts.join('');
   },
 
   /**

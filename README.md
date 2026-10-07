@@ -34,11 +34,14 @@ campus-lost-found/
 │   ├── app.js              # 核心应用交互控制器（DOM 事件绑定、模态框调度、视图渲染、Toast）
 │   ├── data.js             # 数据持久化管理层（LocalStorage 封装、增删查改、福州大学真实示例数据集）
 │   └── utils.js            # 通用工具函数库（输入表单校验、多维过滤算法、关键字高亮、XSS 转义、脱敏）
+├── docs/
+│   ├── 开发记录.md          # 优化原因、实现过程与验证记录，供课程博客整理
+│   └── images/            # 开发验证截图
 ├── assets/
 │   └── web_preview.png     # 系统运行预览界面截图
 └── test/
     ├── test_runner.html    # 自动化单元测试运行器（浏览器可视化测试报告仪表盘，双击一键跑测）
-    ├── unit_tests.js       # 27 个测试用例（覆盖输入校验、搜索、发布管理与存储异常）
+    ├── unit_tests.js       # 38 个测试用例（包含搜索特殊字符、日期边界与存储异常）
     ├── test_helpers.js     # 测试用内存存储，每个用例互不影响
     ├── run_tests.js        # 可选的 Node.js 命令行测试入口
     └── test_result.png     # 测试用例运行结果截图
@@ -93,7 +96,7 @@ campus-lost-found/
 
 ## 🧪 自动化单元测试说明
 
-本项目包含 **27 个测试用例**，位于 `test/unit_tests.js`。浏览器运行器使用自定义断言，没有引入 Mocha 或 Chai。每个用例使用独立的内存存储，执行实际的数据读取与保存方法，不读写用户的 LocalStorage 发布记录。编辑流程的表单回显、取消、图片移除和页面刷新还需要配合浏览器操作验证。
+本项目包含 **38 个测试用例**，位于 `test/unit_tests.js`。浏览器运行器使用自定义断言，没有引入 Mocha 或 Chai。每个用例使用独立的内存存储，执行实际的数据读取与保存方法，不读写用户的 LocalStorage 发布记录。编辑流程的表单回显、取消、图片移除和页面刷新还需要配合浏览器操作验证。
 
 ### 运行方式：
 直接在浏览器中打开 **`test/test_runner.html`** 文件。页面将自动执行全部用例，并呈现可视化测试报告仪表盘。若已安装 Node.js，也可以在项目目录运行 `node test/run_tests.js`，无需安装依赖，测试失败时返回非零退出码。
@@ -129,3 +132,22 @@ campus-lost-found/
   25. `DataManager`: 删除最后一条记录后重新读取仍为空
   26. `DataManager.getItems`: 初始化返回对象不会污染示例数据
   27. `DataManager.updateItemStatus`: 重复结贴保留首次完成时间
+  28. `highlightKeyword`: 特殊字符高亮时保持完整转义
+  29. `highlightKeyword`: 不匹配转义生成的实体名称
+  30. `highlightKeyword`: 正则符号按普通关键词匹配
+  31. `highlightKeyword`: 忽略大小写、去除首尾空格并高亮全部匹配
+  32. `highlightKeyword`: 匹配完整标签时仍保持安全转义
+  33. `validateItem`: 正常月末和闰年日期通过
+  34. `validateItem`: 拦截不存在的日期及年月日越界
+  35. `validateItem`: 只接受完整的 YYYY-MM-DD 日期字符串
+  36. `validateItem`: 当天可发布，未来日期不能发布
+  37. `formatLocalDate`: 本地凌晨、深夜和跨年边界
+  38. `DataManager.updateItem`: 编辑时非法日期不覆盖原记录
+
+## 搜索与日期规则
+
+搜索将关键词作为普通文字匹配，支持 `&`、尖括号、引号和 `C++` 等内容。匹配忽略大小写、去除关键词首尾空格，并保留原文大小写。高亮前先在原文定位，输出时分别转义文字，避免破坏 HTML 实体或插入可执行标签。
+
+发布和编辑都要求日期为 `YYYY-MM-DD`，且必须是实际存在、不会晚于本地今天的日期。默认日期和日期选择器上限使用本地日历，避免 UTC 与本地时差造成日期偏移。表单和数据层共享校验规则。
+
+历次优化、问题原因和验证记录保存在 [开发记录](docs/开发记录.md)，用于后续整理课程博客。

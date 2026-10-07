@@ -438,6 +438,141 @@ const UnitTests = [
       assert.isTrue(DataManager.updateItemStatus(1001, 'open'));
       assert.strictEqual(DataManager.getItemById(1001).resolvedTime, undefined);
     }
+  },
+  {
+    name: '测试用例 28: 特殊字符能高亮且保持完整转义',
+    category: '搜索高亮测试 (highlightKeyword)',
+    description: '分别搜索 &、尖括号和引号，匹配部分应完整转义，不拆开 HTML 实体。',
+    testFn(assert) {
+      const text = `卡套 & <标签> "蓝色" '钥匙'`;
+      ['&', '<', '>', '"', "'"].forEach(keyword => {
+        const html = Utils.highlightKeyword(text, keyword);
+        assert.isTrue(html.includes('>' + Utils.escapeHtml(keyword) + '</mark>'));
+        assert.strictEqual(html.replace(/<mark[^>]*>|<\/mark>/g, ''), Utils.escapeHtml(text));
+      });
+    }
+  },
+  {
+    name: '测试用例 29: 不能匹配转义产生的实体名称',
+    category: '搜索高亮测试 (highlightKeyword)',
+    description: '原文只有 & 和尖括号时，amp、lt 等实体名称不应被当作原文关键词。',
+    testFn(assert) {
+      ['amp', 'lt', 'gt', 'quot', '039'].forEach(keyword => {
+        const text = `& < > " '`;
+        assert.strictEqual(Utils.highlightKeyword(text, keyword), Utils.escapeHtml(text));
+      });
+    }
+  },
+  {
+    name: '测试用例 30: 正则符号按普通关键词匹配',
+    category: '搜索高亮测试 (highlightKeyword)',
+    description: '加号、括号、反斜杠等符号只能匹配本身，不能改变搜索规则。',
+    testFn(assert) {
+      ['C++', '[钥匙]', '(课本)', 'a.b', '$&', '\\', '*', '?'].forEach(keyword => {
+        const text = '前缀 ' + keyword + ' 后缀';
+        const html = Utils.highlightKeyword(text, keyword);
+        assert.isTrue(html.includes('>' + Utils.escapeHtml(keyword) + '</mark>'));
+        assert.strictEqual(html.replace(/<mark[^>]*>|<\/mark>/g, ''), Utils.escapeHtml(text));
+      });
+    }
+  },
+  {
+    name: '测试用例 31: 忽略大小写并高亮全部匹配',
+    category: '搜索高亮测试 (highlightKeyword)',
+    description: '关键词首尾空格被去除，重复匹配保留原文大小写；空关键词只转义。',
+    testFn(assert) {
+      const html = Utils.highlightKeyword('AirPods airpods AIRPODS', ' airpods ');
+      assert.strictEqual((html.match(/<mark /g) || []).length, 3);
+      assert.strictEqual(html.replace(/<mark[^>]*>|<\/mark>/g, ''), 'AirPods airpods AIRPODS');
+      assert.strictEqual(Utils.highlightKeyword('<卡套>&', '   '), '&lt;卡套&gt;&amp;');
+    }
+  },
+  {
+    name: '测试用例 32: 匹配整段标签时仍不生成可执行标签',
+    category: '搜索安全测试 (highlightKeyword)',
+    description: '搜索 <script> 等完整标签时，只高亮转义后的文字，不插入原始标签。',
+    testFn(assert) {
+      const text = '<script>alert("test")</script>';
+      const html = Utils.highlightKeyword(text, '<script>');
+      assert.isFalse(html.includes('<script>'));
+      assert.isTrue(html.includes('>&lt;script&gt;</mark>'));
+      assert.strictEqual(html.replace(/<mark[^>]*>|<\/mark>/g, ''), Utils.escapeHtml(text));
+    }
+  },
+  {
+    name: '测试用例 33: 合法日期与闰年二月通过校验',
+    category: '日期校验测试 (validateItem)',
+    description: '验证正常月末、闰年二月及能被 400 整除的世纪年份。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      ['2026-09-30', '2026-01-31', '2024-02-29', '2000-02-29', '0001-01-01'].forEach(date => {
+        assert.isTrue(Utils.validateItem({ ...initialMockData[0], date }, today).isValid, date);
+      });
+    }
+  },
+  {
+    name: '测试用例 34: 不存在的日期不能自动进位通过',
+    category: '日期边界测试 (validateItem)',
+    description: '拦截二月三十日、非闰年二月二十九日、大小月及月份越界。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      ['2026-02-30', '2025-02-29', '1900-02-29', '2026-04-31', '2026-00-01', '2026-13-01', '2026-01-00', '2026-01-32', '0000-01-01'].forEach(date => {
+        const result = Utils.validateItem({ ...initialMockData[0], date }, today);
+        assert.isFalse(result.isValid, date);
+        assert.isTrue(result.errors.some(error => error.includes('有效的日期')), date);
+      });
+    }
+  },
+  {
+    name: '测试用例 35: 日期必须使用完整年月日格式',
+    category: '日期格式测试 (validateItem)',
+    description: '拒绝空值、非字符串、斜杠日期和时间戳，只接受 YYYY-MM-DD。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      ['', null, undefined, 20261007, {}, '2026/10/07', '2026-1-1', '2026-10-07T00:00:00Z', ' 2026-10-07 '].forEach(date => {
+        assert.isFalse(Utils.validateItem({ ...initialMockData[0], date }, today).isValid, String(date));
+      });
+    }
+  },
+  {
+    name: '测试用例 36: 当天可发布，未来日期不能发布',
+    category: '日期业务测试 (validateItem)',
+    description: '用固定参考日期验证昨天、今天和明天，并覆盖寻物与招领两种类型。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 0, 5);
+      ['lost', 'found'].forEach(type => {
+        ['2026-10-06', '2026-10-07'].forEach(date => {
+          assert.isTrue(Utils.validateItem({ ...initialMockData[0], type, date }, today).isValid);
+        });
+        const result = Utils.validateItem({ ...initialMockData[0], type, date: '2026-10-08' }, today);
+        assert.isFalse(result.isValid);
+        assert.isTrue(result.errors.some(error => error.includes('不能晚于今天')));
+      });
+    }
+  },
+  {
+    name: '测试用例 37: 默认日期按本地日历计算',
+    category: '时区边界测试 (formatLocalDate)',
+    description: '验证本地凌晨与深夜、年末与次年，不使用 UTC 截断日期。',
+    testFn(assert) {
+      assert.strictEqual(Utils.formatLocalDate(new Date(2026, 9, 7, 0, 5)), '2026-10-07');
+      assert.strictEqual(Utils.formatLocalDate(new Date(2026, 11, 31, 23, 55)), '2026-12-31');
+      assert.strictEqual(Utils.formatLocalDate(new Date(2027, 0, 1, 0, 5)), '2027-01-01');
+    }
+  },
+  {
+    name: '测试用例 38: 编辑时非法日期不覆盖原记录',
+    category: '编辑日期测试 (DataManager.updateItem)',
+    description: '编辑日期也走统一校验，错误日期或未来日期均不能覆盖已保存的信息。',
+    testFn(assert) {
+      const before = JSON.stringify(DataManager.getItemById(1001));
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      ['2025-02-29', '2026-04-31', Utils.formatLocalDate(tomorrow)].forEach(date => {
+        assert.isFalse(DataManager.updateItem(1001, { date }));
+        assert.strictEqual(JSON.stringify(DataManager.getItemById(1001)), before);
+      });
+    }
   }
 ];
 
