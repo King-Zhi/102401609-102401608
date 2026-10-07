@@ -299,7 +299,7 @@
             <label class="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 flex flex-col items-center justify-center text-slate-400 cursor-pointer bg-slate-50 hover:text-emerald-600 transition">
               <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
               <span class="text-[10px] mt-1">本地图片</span>
-              <input type="file" id="formImageFile" accept="image/*" class="hidden" onchange="App.handleImageUpload(this)">
+              <input type="file" id="formImageFile" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" class="hidden" onchange="App.handleImageUpload(this)">
             </label>
             <div id="imagePreviewBox" class="hidden relative w-20 h-20 rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
               <img id="imagePreview" src="" class="w-full h-full object-cover">
@@ -308,8 +308,8 @@
               </button>
             </div>
             <div class="text-[11px] text-slate-400 space-y-0.5">
-              <p>支持 PNG、JPG、WEBP 格式图片；</p>
-              <p>清晰的照片可将失物寻回率提升 80% 以上！</p>
+              <p>支持 PNG、JPG、WEBP 格式图片</p>
+              <p>单张图片不超过 2MB</p>
             </div>
           </div>
         </div>
@@ -333,7 +333,7 @@
         <!-- 提交按键 -->
         <div class="pt-2 flex items-center justify-end gap-2">
           <button type="button" onclick="App.closePublishModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-xl font-medium transition">取消</button>
-          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-1.5">
+          <button type="submit" id="publishSubmitButton" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed">
             <i class="fa-solid fa-paper-plane text-xs"></i>
             <span id="publishSubmitLabel">确认发布</span>
           </button>

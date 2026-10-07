@@ -22,3 +22,7 @@ for (const test of tests) {
 }
 console.log(`${tests.length - failed}/${tests.length} PASSED, ${failed} FAILED`);
 process.exitCode = failed ? 1 : 0;
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
+const application = spawnSync(process.execPath, [path.join(__dirname, 'app_tests.js')], { stdio: 'inherit' });
+if (application.status !== 0) process.exitCode = 1;
