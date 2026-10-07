@@ -3,9 +3,9 @@
  * 封装 LocalStorage 持久化存储与预设校园测试数据集
  */
 
-const STORAGE_KEY = 'CAMPUS_LOST_FOUND_ITEMS_V2';
+const STORAGE_KEY = 'CAMPUS_LOST_FOUND_ITEMS_V3';
 
-// 预设高真实度校园失物招领数据集（贴近福州大学校园实际场景）
+// 预设高真实度校园失物招领数据集（贴近福州大学校园实际场景，本地实物精准配图）
 const initialMockData = [
   {
     id: 1001,
@@ -16,7 +16,7 @@ const initialMockData = [
     date: '2026-10-02',
     timestamp: Date.now() - 1000 * 60 * 25, // 25分钟前
     desc: '黑色龙猫卡套，姓名：张*华，卡号尾号3829。已交暂存于食堂值班阿姨处，请失主核对姓名及学院后认领！',
-    img: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1001_card.jpg',
     contactType: '微信',
     contactVal: 'fzu_helper_2026',
     status: 'open', // open: 进行中, solved: 已找到/已归还
@@ -32,7 +32,7 @@ const initialMockData = [
     date: '2026-10-02',
     timestamp: Date.now() - 1000 * 60 * 120, // 2小时前
     desc: '白色充电盒，套着黄色皮卡丘硅胶壳，盒盖内侧有些许铅笔划痕。内含备考期末录音资料，万分感谢捡到的同学，必有奶茶重谢！',
-    img: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1002_airpods.jpg',
     contactType: '手机号',
     contactVal: '13859012345',
     status: 'open',
@@ -43,12 +43,12 @@ const initialMockData = [
     id: 1003,
     type: 'found',
     title: '西三教学楼201教室捡到一把黑色折叠伞',
-    category: '生活钥匙',
+    category: '其他物品',
     location: '西三教学楼201大教室第4排抽屉',
     date: '2026-10-01',
     timestamp: Date.now() - 1000 * 60 * 60 * 22, // 昨天
     desc: '黑色十骨天堂晴雨伞，手柄系有蓝色小熊挂绳，下雨天容易遗忘。目前暂存西三一楼保安室。',
-    img: 'https://images.unsplash.com/photo-1517479149777-5f3b1511d5ad?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1003_umbrella.jpg',
     contactType: 'QQ',
     contactVal: '192837465',
     status: 'open',
@@ -64,7 +64,7 @@ const initialMockData = [
     date: '2026-09-30',
     timestamp: Date.now() - 1000 * 60 * 60 * 48, // 2天前
     desc: '钥匙串上有两把宿舍门钥匙和一把黑色自行车小钥匙，挂件是一个绿色小恐龙玩偶。',
-    img: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1004_keys.jpg',
     contactType: '微信',
     contactVal: 'key_master_fzu',
     status: 'solved', // 已成功找回
@@ -80,7 +80,7 @@ const initialMockData = [
     date: '2026-09-29',
     timestamp: Date.now() - 1000 * 60 * 60 * 72,
     desc: '书本扉页有铅笔写的姓名“李*涵”，夹着数张手写笔记草稿纸，请失主随时联系我认领。',
-    img: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1005_book.jpg',
     contactType: '手机号',
     contactVal: '13950098765',
     status: 'open',
@@ -96,7 +96,7 @@ const initialMockData = [
     date: '2026-09-28',
     timestamp: Date.now() - 1000 * 60 * 60 * 96,
     desc: '深蓝色杯身，表面贴有皮卡丘反光贴纸，杯底有少许掉漆磨损痕迹。',
-    img: 'https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=500&q=80',
+    img: 'assets/images/item_1006_bottle.jpg',
     contactType: '微信',
     contactVal: 'water_cup_seeker',
     status: 'solved',
@@ -107,17 +107,57 @@ const initialMockData = [
 
 const DataManager = {
   /**
-   * 初始化并获取所有数据
+   * 初始化并获取所有数据（支持本地旧缓存自动平滑升级为精准配图）
    */
   getItems() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) {
-        this.saveItems(initialMockData);
-        return [...initialMockData];
+        // 从旧版本迁移用户自行新增的发布
+        const prev = localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V2') || localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V1');
+        let userCreated = [];
+        if (prev) {
+          try {
+            const list = JSON.parse(prev);
+            if (Array.isArray(list)) {
+              userCreated = list.filter(item => item.id > 1006);
+            }
+          } catch (e) {}
+        }
+        const initialList = [...userCreated, ...initialMockData];
+        this.saveItems(initialList);
+        return initialList;
       }
+
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // 自动修正预设物品中的旧图片链接为对应的高清本地图片
+        let hasUpgrade = false;
+        parsed.forEach(it => {
+          if (it.id === 1001 && it.img !== 'assets/images/item_1001_card.jpg') {
+            it.img = 'assets/images/item_1001_card.jpg';
+            hasUpgrade = true;
+          } else if (it.id === 1002 && it.img !== 'assets/images/item_1002_airpods.jpg') {
+            it.img = 'assets/images/item_1002_airpods.jpg';
+            hasUpgrade = true;
+          } else if (it.id === 1003 && it.img !== 'assets/images/item_1003_umbrella.jpg') {
+            it.img = 'assets/images/item_1003_umbrella.jpg';
+            it.category = '其他物品';
+            hasUpgrade = true;
+          } else if (it.id === 1004 && it.img !== 'assets/images/item_1004_keys.jpg') {
+            it.img = 'assets/images/item_1004_keys.jpg';
+            hasUpgrade = true;
+          } else if (it.id === 1005 && it.img !== 'assets/images/item_1005_book.jpg') {
+            it.img = 'assets/images/item_1005_book.jpg';
+            hasUpgrade = true;
+          } else if (it.id === 1006 && it.img !== 'assets/images/item_1006_bottle.jpg') {
+            it.img = 'assets/images/item_1006_bottle.jpg';
+            hasUpgrade = true;
+          }
+        });
+        if (hasUpgrade) {
+          this.saveItems(parsed);
+        }
         return parsed;
       }
       this.saveItems(initialMockData);
