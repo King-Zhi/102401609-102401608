@@ -2,7 +2,9 @@
 function runUnitTest(test, assert) {
   const originalGetStorage = DataManager.getStorage;
   const originalSaveItems = DataManager.saveItems;
+  const currentKey = typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'CAMPUS_LOST_FOUND_ITEMS_V3';
   const values = new Map([
+    [currentKey, JSON.stringify(initialMockData)],
     ['CAMPUS_LOST_FOUND_ITEMS_V2', JSON.stringify(initialMockData)]
   ]);
   const storage = {

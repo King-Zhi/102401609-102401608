@@ -118,7 +118,9 @@ const DataManager = {
       const stored = this.getStorage().getItem(STORAGE_KEY);
       if (!stored) {
         // 从旧版本迁移用户自行新增的发布
-        const prev = localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V2') || localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V1');
+        const storage = this.getStorage();
+        const prev = (storage.getItem && storage.getItem('CAMPUS_LOST_FOUND_ITEMS_V2')) ||
+                     (typeof localStorage !== 'undefined' && localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V2'));
         let userCreated = [];
         if (prev) {
           try {
@@ -130,37 +132,39 @@ const DataManager = {
         }
         const initialList = [...userCreated, ...initialMockData];
         this.saveItems(initialList);
-        return initialList;
+        return JSON.parse(JSON.stringify(initialList));
       }
 
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // 自动修正预设物品中的旧图片链接为对应的高清本地图片
-        let hasUpgrade = false;
-        parsed.forEach(it => {
-          if (it.id === 1001 && it.img !== 'assets/images/item_1001_card.jpg') {
-            it.img = 'assets/images/item_1001_card.jpg';
-            hasUpgrade = true;
-          } else if (it.id === 1002 && it.img !== 'assets/images/item_1002_airpods.jpg') {
-            it.img = 'assets/images/item_1002_airpods.jpg';
-            hasUpgrade = true;
-          } else if (it.id === 1003 && it.img !== 'assets/images/item_1003_umbrella.jpg') {
-            it.img = 'assets/images/item_1003_umbrella.jpg';
-            it.category = '其他物品';
-            hasUpgrade = true;
-          } else if (it.id === 1004 && it.img !== 'assets/images/item_1004_keys.jpg') {
-            it.img = 'assets/images/item_1004_keys.jpg';
-            hasUpgrade = true;
-          } else if (it.id === 1005 && it.img !== 'assets/images/item_1005_book.jpg') {
-            it.img = 'assets/images/item_1005_book.jpg';
-            hasUpgrade = true;
-          } else if (it.id === 1006 && it.img !== 'assets/images/item_1006_bottle.jpg') {
-            it.img = 'assets/images/item_1006_bottle.jpg';
-            hasUpgrade = true;
+      if (Array.isArray(parsed)) {
+        if (parsed.length > 0) {
+          // 自动修正预设物品中的旧图片链接为对应的高清本地图片
+          let hasUpgrade = false;
+          parsed.forEach(it => {
+            if (it.id === 1001 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1001_card.jpg';
+              hasUpgrade = true;
+            } else if (it.id === 1002 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1002_airpods.jpg';
+              hasUpgrade = true;
+            } else if (it.id === 1003 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1003_umbrella.jpg';
+              it.category = '其他物品';
+              hasUpgrade = true;
+            } else if (it.id === 1004 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1004_keys.jpg';
+              hasUpgrade = true;
+            } else if (it.id === 1005 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1005_book.jpg';
+              hasUpgrade = true;
+            } else if (it.id === 1006 && it.img && it.img.includes('unsplash.com')) {
+              it.img = 'assets/images/item_1006_bottle.jpg';
+              hasUpgrade = true;
+            }
+          });
+          if (hasUpgrade) {
+            this.saveItems(parsed);
           }
-        });
-        if (hasUpgrade) {
-          this.saveItems(parsed);
         }
         return parsed;
       }
