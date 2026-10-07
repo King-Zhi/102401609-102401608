@@ -106,25 +106,29 @@ const initialMockData = [
 ];
 
 const DataManager = {
+  getStorage() {
+    return localStorage;
+  },
+
   /**
    * 初始化并获取所有数据
    */
   getItems() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = this.getStorage().getItem(STORAGE_KEY);
       if (!stored) {
         this.saveItems(initialMockData);
-        return [...initialMockData];
+        return JSON.parse(JSON.stringify(initialMockData));
       }
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
       this.saveItems(initialMockData);
-      return [...initialMockData];
+      return JSON.parse(JSON.stringify(initialMockData));
     } catch (e) {
       console.warn('读取本地数据失败，回退到预设数据', e);
-      return [...initialMockData];
+      return JSON.parse(JSON.stringify(initialMockData));
     }
   },
 
@@ -133,7 +137,7 @@ const DataManager = {
    */
   saveItems(items) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      this.getStorage().setItem(STORAGE_KEY, JSON.stringify(items));
       return true;
     } catch (e) {
       console.error('存储数据失败', e);
@@ -163,8 +167,7 @@ const DataManager = {
       publisherName: rawItem.publisherName || '我发布的信息'
     };
     items.unshift(newItem);
-    this.saveItems(items);
-    return newItem;
+    return this.saveItems(items) ? newItem : null;
   },
 
   /**
@@ -173,11 +176,14 @@ const DataManager = {
   updateItemStatus(id, newStatus = 'solved') {
     const items = this.getItems();
     const target = items.find(it => String(it.id) === String(id));
-    if (target) {
+    if (target && target.isMine && ['open', 'solved'].includes(newStatus)) {
       target.status = newStatus;
-      target.resolvedTime = new Date().toISOString();
-      this.saveItems(items);
-      return true;
+      if (newStatus === 'solved') {
+        target.resolvedTime = target.resolvedTime || new Date().toISOString();
+      } else {
+        delete target.resolvedTime;
+      }
+      return this.saveItems(items);
     }
     return false;
   },
@@ -213,22 +219,18 @@ const DataManager = {
    * 删除物品（用于我的发布管理）
    */
   deleteItem(id) {
-    let items = this.getItems();
-    const initialLen = items.length;
-    items = items.filter(it => String(it.id) !== String(id));
-    if (items.length !== initialLen) {
-      this.saveItems(items);
-      return true;
-    }
-    return false;
+    const items = this.getItems();
+    const target = items.find(it => String(it.id) === String(id));
+    if (!target || !target.isMine) return false;
+    return this.saveItems(items.filter(it => String(it.id) !== String(id)));
   },
 
   /**
    * 一键重置为初始精选校园数据（专供助教和测试人员反复评测）
    */
   resetToDefault() {
-    this.saveItems(initialMockData);
-    return [...initialMockData];
+    if (!this.saveItems(initialMockData)) return null;
+    return JSON.parse(JSON.stringify(initialMockData));
   }
 };
 

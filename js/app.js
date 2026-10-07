@@ -381,6 +381,10 @@ const App = {
    */
   markItemSolved(id) {
     const success = DataManager.updateItemStatus(id, 'solved');
+    if (!success) {
+      this.showToast('标记失败，记录可能已失效或浏览器无法保存数据', 'error');
+      return;
+    }
     if (success) {
       this.showToast('🎉 已成功将该信息标记为“已解决/已归还”！', 'success');
       this.refresh();
@@ -397,7 +401,10 @@ const App = {
 
   handleDeleteItem(id) {
     if (confirm('确定要删除这条发布记录吗？')) {
-      DataManager.deleteItem(id);
+      if (!DataManager.deleteItem(id)) {
+        this.showToast('删除失败，记录可能已失效或浏览器无法保存数据', 'error');
+        return;
+      }
       this.showToast('已删除该条记录', 'info');
       this.closeDetailModal();
       this.refresh();
@@ -561,6 +568,10 @@ const App = {
       itemPayload.img = itemPayload.img || this.getDefaultImageForCategory(category);
       itemPayload.publisherName = '我发布的';
       updatedItem = DataManager.addItem(itemPayload);
+      if (!updatedItem) {
+        this.showToast('发布失败，浏览器存储空间可能不足，请减少图片大小后重试', 'error');
+        return;
+      }
       this.showToast('🎉 发布成功！已在首页最上方置顶显示', 'success');
     }
 
@@ -683,7 +694,10 @@ const App = {
 
   handleResetData() {
     if (confirm('确定要将数据重置为初始的福州大学精选校园测试数据吗？已发布的数据将被清空重置。')) {
-      DataManager.resetToDefault();
+      if (!DataManager.resetToDefault()) {
+        this.showToast('重置失败，浏览器无法保存数据，原记录未更改', 'error');
+        return;
+      }
       this.refresh();
       this.showToast('✅ 已恢复为初始预设测试数据！', 'success');
       this.toggleTestingDropdown();

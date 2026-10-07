@@ -1,6 +1,6 @@
 /**
  * unit_tests.js - 校园失物招领单元测试用例集
- * 包含 17 个白盒测试与边界值测试用例，覆盖表单校验、多维检索、安全防护与数据流转
+ * 覆盖表单校验、多维检索、发布管理与存储异常。
  */
 
 const UnitTests = [
@@ -319,6 +319,124 @@ const UnitTests = [
       } finally {
         DataManager.saveItems = saveItems;
       }
+    }
+  },
+  {
+    name: '测试用例 18: 发布时存储空间不足不返回成功',
+    category: '存储异常测试 (addItem)',
+    description: '模拟浏览器拒绝写入，发布返回 null，已有列表保持不变。',
+    testFn(assert, storage) {
+      const before = JSON.stringify(DataManager.getItems());
+      storage.setItem = () => { throw new Error('QuotaExceededError'); };
+      const created = DataManager.addItem({ ...initialMockData[0], title: '新发布的校园卡' });
+      assert.strictEqual(created, null);
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 19: 结贴保存失败时保留原状态',
+    category: '存储异常测试 (updateItemStatus)',
+    description: '状态写入失败时返回 false，不能将未保存的结贴显示为成功。',
+    testFn(assert, storage) {
+      const before = JSON.stringify(DataManager.getItemById(1001));
+      storage.setItem = () => { throw new Error('Storage unavailable'); };
+      assert.isFalse(DataManager.updateItemStatus(1001, 'solved'));
+      assert.strictEqual(JSON.stringify(DataManager.getItemById(1001)), before);
+    }
+  },
+  {
+    name: '测试用例 20: 删除保存失败时保留原记录',
+    category: '存储异常测试 (deleteItem)',
+    description: '模拟删除时写入失败，返回 false 且记录仍然可以查询。',
+    testFn(assert, storage) {
+      const before = JSON.stringify(DataManager.getItems());
+      storage.setItem = () => { throw new Error('Storage unavailable'); };
+      assert.isFalse(DataManager.deleteItem(1001));
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 21: 重置失败不会清空已有数据',
+    category: '存储异常测试 (resetToDefault)',
+    description: '修改记录后模拟重置写入失败，原有修改应保留。',
+    testFn(assert, storage) {
+      assert.isTrue(DataManager.updateItem(1001, { title: '自己修改的校园卡' }));
+      const before = JSON.stringify(DataManager.getItems());
+      storage.setItem = () => { throw new Error('Storage unavailable'); };
+      assert.strictEqual(DataManager.resetToDefault(), null);
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 22: 已保存的空列表不会恢复示例数据',
+    category: '持久化边界测试 (getItems)',
+    description: '空数组也是合法数据，连续读取和刷新后应保持为空。',
+    testFn(assert) {
+      assert.isTrue(DataManager.saveItems([]));
+      assert.strictEqual(DataManager.getItems().length, 0);
+      assert.strictEqual(DataManager.getItems().length, 0);
+    }
+  },
+  {
+    name: '测试用例 23: 非本人记录不能删除或结贴',
+    category: '权限边界测试 (deleteItem & updateItemStatus)',
+    description: '即使直接调用数据层，非本人记录也不允许被删除或修改状态。',
+    testFn(assert) {
+      const before = JSON.stringify(DataManager.getItems());
+      assert.isFalse(DataManager.deleteItem(1002));
+      assert.isFalse(DataManager.updateItemStatus(1002, 'solved'));
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 24: 不存在的记录和非法状态不能修改',
+    category: '状态边界测试 (updateItemStatus)',
+    description: '拦截不存在的 ID 与预设范围之外的状态值。',
+    testFn(assert) {
+      const before = JSON.stringify(DataManager.getItems());
+      assert.isFalse(DataManager.updateItemStatus('missing-item', 'solved'));
+      assert.isFalse(DataManager.deleteItem('missing-item'));
+      assert.isFalse(DataManager.updateItemStatus(1001, 'invalid-status'));
+      assert.strictEqual(JSON.stringify(DataManager.getItems()), before);
+    }
+  },
+  {
+    name: '测试用例 25: 删除最后一条记录后读取仍然为空',
+    category: '删除流程测试 (deleteItem & getItems)',
+    description: '列表只剩本人记录时，删除成功后不能重新出现示例数据。',
+    testFn(assert) {
+      assert.isTrue(DataManager.saveItems([{ ...initialMockData[0] }]));
+      assert.isTrue(DataManager.deleteItem(1001));
+      assert.strictEqual(DataManager.getItems().length, 0);
+      assert.strictEqual(DataManager.getItemById(1001), null);
+    }
+  },
+  {
+    name: '测试用例 26: 初始化返回数据与示例数据相互独立',
+    category: '初始化测试 (getItems)',
+    description: '首次运行且存储不可写时，修改返回对象也不会污染原始示例。',
+    testFn(assert, storage) {
+      const originalTitle = initialMockData[0].title;
+      storage.getItem = () => null;
+      storage.setItem = () => { throw new Error('Storage unavailable'); };
+      DataManager.getItems()[0].title = '临时修改';
+      assert.strictEqual(initialMockData[0].title, originalTitle);
+      assert.strictEqual(DataManager.getItems()[0].title, originalTitle);
+    }
+  },
+  {
+    name: '测试用例 27: 重复结贴不改变首次完成时间',
+    category: '状态流转测试 (updateItemStatus)',
+    description: '重复标记保留原结贴时间，恢复进行中时清除结贴时间。',
+    testFn(assert) {
+      const items = DataManager.getItems();
+      items[0].status = 'solved';
+      items[0].resolvedTime = '2026-10-02T10:00:00.000Z';
+      assert.isTrue(DataManager.saveItems(items));
+      assert.isTrue(DataManager.updateItemStatus(1001, 'solved'));
+      assert.strictEqual(DataManager.getItemById(1001).resolvedTime, items[0].resolvedTime);
+      assert.isTrue(DataManager.updateItemStatus(1001, 'open'));
+      assert.strictEqual(DataManager.getItemById(1001).resolvedTime, undefined);
     }
   }
 ];

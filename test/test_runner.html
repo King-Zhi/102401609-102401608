@@ -102,6 +102,7 @@
   <script src="../js/utils.js"></script>
   <script src="../js/data.js"></script>
   <script src="unit_tests.js"></script>
+  <script src="test_helpers.js"></script>
 
   <!-- 自动化测试微型运行引擎 -->
   <script>
@@ -135,23 +136,11 @@
         let isPass = true;
         let errMsg = '';
         const caseStart = performance.now();
-        const originalSaveItems = DataManager.saveItems;
-        const originalGetItems = DataManager.getItems;
-        let fixture = JSON.parse(JSON.stringify(initialMockData));
-        DataManager.getItems = () => JSON.parse(JSON.stringify(fixture));
-        DataManager.saveItems = items => {
-          fixture = JSON.parse(JSON.stringify(items));
-          return true;
-        };
-
         try {
-          test.testFn(assert);
+          runUnitTest(test, assert);
         } catch (err) {
           isPass = false;
           errMsg = err.message;
-        } finally {
-          DataManager.getItems = originalGetItems;
-          DataManager.saveItems = originalSaveItems;
         }
 
         const caseDuration = (performance.now() - caseStart).toFixed(2);
