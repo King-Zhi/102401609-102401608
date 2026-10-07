@@ -99,7 +99,7 @@ const App = {
     const timeText = Utils.timeAgo(item.timestamp || item.date);
 
     // 默认或预设实物图片
-    const imgSrc = item.img || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=400&q=80';
+    const imgSrc = item.img || 'assets/images/item_1001_card.jpg';
 
     return `
       <div onclick="App.openDetail(${item.id})" class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-sm card-hover flex flex-col justify-between cursor-pointer space-y-3">
@@ -264,7 +264,7 @@ const App = {
     this.currentDetailItem = item;
 
     document.getElementById('detailTitle').innerText = item.title;
-    document.getElementById('detailImg').src = item.img || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=500&q=80';
+    document.getElementById('detailImg').src = item.img || 'assets/images/item_1001_card.jpg';
     document.getElementById('detailCategoryBadge').innerText = item.category;
     document.getElementById('detailLocation').innerText = item.location;
     document.getElementById('detailDate').innerText = item.date;
@@ -592,13 +592,13 @@ const App = {
    */
   getDefaultImageForCategory(category) {
     const map = {
-      '校园卡/证件': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=500&q=80',
-      '数码电子': 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=500&q=80',
-      '书籍文具': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=500&q=80',
-      '生活钥匙': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=500&q=80',
-      '其他物品': 'https://images.unsplash.com/photo-1517479149777-5f3b1511d5ad?auto=format&fit=crop&w=500&q=80'
+      '校园卡/证件': 'assets/images/item_1001_card.jpg',
+      '数码电子': 'assets/images/item_1002_airpods.jpg',
+      '书籍文具': 'assets/images/item_1005_book.jpg',
+      '生活钥匙': 'assets/images/item_1004_keys.jpg',
+      '其他物品': 'assets/images/item_1006_bottle.jpg'
     };
-    return map[category] || map['其他物品'];
+    return map[category] || 'assets/images/item_1001_card.jpg';
   },
 
   /**
