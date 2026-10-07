@@ -22,9 +22,12 @@ const App = {
    */
   init() {
     // 默认发布日期设为今天
-    const today = new Date().toISOString().split('T')[0];
+    const today = Utils.formatLocalDate();
     const dateInput = document.getElementById('formDate');
-    if (dateInput) dateInput.value = today;
+    if (dateInput) {
+      dateInput.value = today;
+      dateInput.max = today;
+    }
 
     // 点击页面其他区域自动收起测试工具下拉
     document.addEventListener('click', (e) => {
@@ -421,7 +424,8 @@ const App = {
     document.getElementById('publishForm').reset();
     this.removeUploadedImage();
     this.onFormTypeChange('lost');
-    document.getElementById('formDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('formDate').value = Utils.formatLocalDate();
+    document.getElementById('formDate').max = Utils.formatLocalDate();
     this.editingItemId = editingItemId;
     const editingItem = editingItemId ? DataManager.getItemById(editingItemId) : null;
     if (editingItemId && (!editingItem || !editingItem.isMine)) {
@@ -468,8 +472,9 @@ const App = {
     const submitLabel = document.getElementById('publishSubmitLabel');
     if (title) title.innerText = '发布失物 / 招领信息';
     if (submitLabel) submitLabel.innerText = '确认发布';
-    const today = new Date().toISOString().split('T')[0];
+    const today = Utils.formatLocalDate();
     document.getElementById('formDate').value = today;
+    document.getElementById('formDate').max = today;
     this.onFormTypeChange('lost');
     if (returnToMyPosts) this.openMyPostsModal();
   },
