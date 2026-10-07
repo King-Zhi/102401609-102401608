@@ -106,12 +106,16 @@ const initialMockData = [
 ];
 
 const DataManager = {
+  getStorage() {
+    return localStorage;
+  },
+
   /**
    * 初始化并获取所有数据（支持本地旧缓存自动平滑升级为精准配图）
    */
   getItems() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = this.getStorage().getItem(STORAGE_KEY);
       if (!stored) {
         // 从旧版本迁移用户自行新增的发布
         const prev = localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V2') || localStorage.getItem('CAMPUS_LOST_FOUND_ITEMS_V1');
@@ -161,10 +165,10 @@ const DataManager = {
         return parsed;
       }
       this.saveItems(initialMockData);
-      return [...initialMockData];
+      return JSON.parse(JSON.stringify(initialMockData));
     } catch (e) {
       console.warn('读取本地数据失败，回退到预设数据', e);
-      return [...initialMockData];
+      return JSON.parse(JSON.stringify(initialMockData));
     }
   },
 
@@ -173,7 +177,7 @@ const DataManager = {
    */
   saveItems(items) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      this.getStorage().setItem(STORAGE_KEY, JSON.stringify(items));
       return true;
     } catch (e) {
       console.error('存储数据失败', e);
@@ -203,8 +207,7 @@ const DataManager = {
       publisherName: rawItem.publisherName || '我发布的信息'
     };
     items.unshift(newItem);
-    this.saveItems(items);
-    return newItem;
+    return this.saveItems(items) ? newItem : null;
   },
 
   /**
@@ -213,35 +216,61 @@ const DataManager = {
   updateItemStatus(id, newStatus = 'solved') {
     const items = this.getItems();
     const target = items.find(it => String(it.id) === String(id));
-    if (target) {
+    if (target && target.isMine && ['open', 'solved'].includes(newStatus)) {
       target.status = newStatus;
-      target.resolvedTime = new Date().toISOString();
-      this.saveItems(items);
-      return true;
+      if (newStatus === 'solved') {
+        target.resolvedTime = target.resolvedTime || new Date().toISOString();
+      } else {
+        delete target.resolvedTime;
+      }
+      return this.saveItems(items);
     }
     return false;
+  },
+
+  /**
+   * 更新自己发布的信息内容，保留原有 ID、状态和发布时间。
+   */
+  updateItem(id, updates) {
+    const items = this.getItems();
+    const index = items.findIndex(it => String(it.id) === String(id));
+    if (index < 0 || !items[index].isMine || !updates || typeof updates !== 'object') {
+      return false;
+    }
+    const target = { ...items[index] };
+
+    const editableFields = [
+      'type', 'title', 'category', 'location', 'date', 'desc',
+      'contactType', 'contactVal', 'img'
+    ];
+    editableFields.forEach(field => {
+      if (Object.prototype.hasOwnProperty.call(updates, field)) {
+        target[field] = updates[field];
+      }
+    });
+    const validator = typeof Utils !== 'undefined' ? Utils : require('./utils.js');
+    if (!validator.validateItem(target).isValid) return false;
+    target.updatedAt = new Date().toISOString();
+    items[index] = target;
+    return this.saveItems(items);
   },
 
   /**
    * 删除物品（用于我的发布管理）
    */
   deleteItem(id) {
-    let items = this.getItems();
-    const initialLen = items.length;
-    items = items.filter(it => String(it.id) !== String(id));
-    if (items.length !== initialLen) {
-      this.saveItems(items);
-      return true;
-    }
-    return false;
+    const items = this.getItems();
+    const target = items.find(it => String(it.id) === String(id));
+    if (!target || !target.isMine) return false;
+    return this.saveItems(items.filter(it => String(it.id) !== String(id)));
   },
 
   /**
    * 一键重置为初始精选校园数据（专供助教和测试人员反复评测）
    */
   resetToDefault() {
-    this.saveItems(initialMockData);
-    return [...initialMockData];
+    if (!this.saveItems(initialMockData)) return null;
+    return JSON.parse(JSON.stringify(initialMockData));
   }
 };
 
