@@ -102,6 +102,15 @@ const Utils = {
         if (!qqRegex.test(contactVal)) {
           errors.push('QQ号码格式不正确，应为5~12位纯数字');
         }
+      } else if (contactType === '微信') {
+        if (/\s/.test(contactVal)) {
+          errors.push('微信号不能包含空格');
+        } else {
+          const wxRegex = /^([a-zA-Z][-_a-zA-Z0-9]{5,19}|1[3-9]\d{9})$/;
+          if (!wxRegex.test(contactVal)) {
+            errors.push('微信号格式不正确，应为6~20位以字母开头的字母、数字、下划线或减号（亦可为11位手机号）');
+          }
+        }
       } else if (contactVal.length < 3) {
         errors.push('联系账号长度至少需要3个字符');
       }

@@ -254,7 +254,7 @@
           </div>
           <div>
             <label id="formDateLabel" class="block font-semibold text-slate-700 mb-1">遗失日期 <span class="text-rose-500">*</span></label>
-            <input type="date" id="formDate" required min="0001-01-01" onfocus="this.max = Utils.formatLocalDate()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-xs text-slate-800">
+            <input type="date" id="formDate" required onfocus="App.updateDateInputBounds(this)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-xs text-slate-800">
           </div>
         </div>
 

@@ -813,6 +813,60 @@ const UnitTests = [
       assert.strictEqual(sorted[3].status, 'solved');
       assert.strictEqual(sorted[4].status, 'solved');
     }
+  },
+
+  {
+    name: '测试用例 49: 微信联系方式包含空格（如 a b c）或非法格式严格拦截',
+    category: '联系方式边界测试 (validateItem)',
+    description: '针对微信号包含空格（如 a b c）、非法字符或长度不合规等情况进行严格校验拦截，确保联系有效性。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      // 包含空格或非法字符的测试样本
+      const invalidWeChatList = [
+        'a b c',
+        'wx test',
+        'wx_ 123',
+        '12345',      // 非纯手机号且少于6位且非字母开头
+        'abc',        // 少于6位
+        'wx@fzu',     // 包含@特殊字符
+        '微信号张三',  // 包含中文字符
+        '1385901234'  // 10位非标准手机号
+      ];
+
+      invalidWeChatList.forEach(contactVal => {
+        const item = { ...initialMockData[0], contactType: '微信', contactVal };
+        const result = Utils.validateItem(item, today);
+        assert.isFalse(result.isValid, `微信号 "${contactVal}" 应被拦截无法通过`);
+        assert.isTrue(
+          result.errors.some(e => e.includes('微信号不能包含空格') || e.includes('微信号格式不正确')),
+          `微信号 "${contactVal}" 应给出具体的格式或空格错误提示`
+        );
+      });
+    }
+  },
+
+  {
+    name: '测试用例 50: 微信联系方式合规格式校验通过（标准字母开头或绑定手机号）',
+    category: '联系方式格式测试 (validateItem)',
+    description: '验证符合微信官方标准的微信号（6~20位字母开头）及11位中国大陆手机号均能顺利通过校验。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      const validWeChatList = [
+        'fzu_helper_2026',
+        'key-master-fzu',
+        'wx_123456',
+        'WeChatOfficial',
+        'a1234567',
+        '13859012345',
+        '15980001122'
+      ];
+
+      validWeChatList.forEach(contactVal => {
+        const item = { ...initialMockData[0], contactType: '微信', contactVal };
+        const result = Utils.validateItem(item, today);
+        assert.isTrue(result.isValid, `合规微信号 "${contactVal}" 应当通过校验`);
+      });
+    }
   }
 ];
 

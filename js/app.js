@@ -22,15 +22,27 @@ const App = {
   isSubmitting: false,
 
   /**
+   * 限制日期选择在合理业务周期内（近90天/一学期内至今天）
+   */
+  updateDateInputBounds(input = document.getElementById('formDate')) {
+    if (!input) return;
+    const today = Utils.formatLocalDate();
+    const minDateObj = new Date();
+    minDateObj.setDate(minDateObj.getDate() - 90);
+    const minDate = Utils.formatLocalDate(minDateObj);
+    input.max = today;
+    input.min = minDate;
+  },
+
+  /**
    * 应用初始化
    */
   init() {
-    // 默认发布日期设为今天
-    const today = Utils.formatLocalDate();
+    // 默认发布日期设为今天，限制在近 90 天（一学期内）至今天
     const dateInput = document.getElementById('formDate');
     if (dateInput) {
-      dateInput.value = today;
-      dateInput.max = today;
+      dateInput.value = Utils.formatLocalDate();
+      this.updateDateInputBounds(dateInput);
     }
 
     // 点击页面其他区域自动收起测试工具下拉
@@ -504,7 +516,7 @@ const App = {
     this.removeUploadedImage();
     this.onFormTypeChange('lost');
     document.getElementById('formDate').value = Utils.formatLocalDate();
-    document.getElementById('formDate').max = Utils.formatLocalDate();
+    this.updateDateInputBounds(document.getElementById('formDate'));
     this.editingItemId = editingItemId;
     const editingItem = editingItemId ? DataManager.getItemById(editingItemId) : null;
     if (editingItemId && (!editingItem || !editingItem.isMine)) {
@@ -554,7 +566,7 @@ const App = {
     if (submitLabel) submitLabel.innerText = '确认发布';
     const today = Utils.formatLocalDate();
     document.getElementById('formDate').value = today;
-    document.getElementById('formDate').max = today;
+    this.updateDateInputBounds(document.getElementById('formDate'));
     this.onFormTypeChange('lost');
     if (returnToMyPosts) this.openMyPostsModal();
   },
@@ -697,8 +709,17 @@ const App = {
     const validation = Utils.validateItem(itemPayload);
     const errorNotice = document.getElementById('formErrorNotice');
 
-    if (!validation.isValid) {
-      errorNotice.innerHTML = `<strong>提交失败：</strong><ul class="list-disc pl-4 mt-1">${validation.errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
+    // 业务时效校验：遗失/拾获日期需在近 90 天内（一学期内）
+    const minDateObj = new Date();
+    minDateObj.setDate(minDateObj.getDate() - 90);
+    const minAllowedDate = Utils.formatLocalDate(minDateObj);
+    const errors = [...(validation.isValid ? [] : validation.errors)];
+    if (date && date < minAllowedDate) {
+      errors.push('遗失或拾获日期超出有效范围（仅支持近 90 天内的校园失物招领信息，请核对日期）');
+    }
+
+    if (errors.length > 0) {
+      errorNotice.innerHTML = `<strong>提交失败：</strong><ul class="list-disc pl-4 mt-1">${errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
       errorNotice.classList.remove('hidden');
       return;
     }
