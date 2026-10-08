@@ -5,7 +5,7 @@
   --primary-hover: #047857;
   --primary-light: #ecfdf5;
   --primary-border: #a7f3d0;
-  --bg-main: #f8fafc;
+  --bg-main: #edf4f1;
   --text-main: #1e293b;
   --text-muted: #64748b;
   --border-color: #e2e8f0;
@@ -30,15 +30,6 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-/* 卡片悬浮动效 */
-.card-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
 /* 模态框淡入淡出动画 */
