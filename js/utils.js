@@ -132,7 +132,7 @@ const Utils = {
 
     const kw = keyword.trim().toLowerCase();
 
-    return items.filter(item => {
+    const filtered = items.filter(item => {
       // 1. 类型过滤 (lost/found)
       if (type !== 'all' && item.type !== type) {
         return false;
@@ -164,6 +164,48 @@ const Utils = {
 
       return true;
     });
+
+    // 6. 搜索相关度智能排序（标题命中 > 地点命中 > 分类命中 > 详细描述命中）
+    if (kw) {
+      const calculateScore = (item) => {
+        let score = 0;
+        const titleLower = (item.title || '').toLowerCase();
+        const locLower = (item.location || '').toLowerCase();
+        const descLower = (item.desc || '').toLowerCase();
+
+        // 标题命中（最高权重）
+        if (titleLower.includes(kw)) {
+          score += 100;
+        } else if (this.matchKeyword(item.title, kw)) {
+          score += 70;
+        }
+
+        // 地点命中
+        if (locLower.includes(kw)) {
+          score += 40;
+        } else if (this.matchKeyword(item.location, kw)) {
+          score += 25;
+        }
+
+        // 分类命中
+        if (this.matchKeyword(item.category, kw)) {
+          score += 20;
+        }
+
+        // 详细描述命中（补充权重）
+        if (descLower.includes(kw)) {
+          score += 15;
+        } else if (item.desc && this.matchKeyword(item.desc, kw)) {
+          score += 10;
+        }
+
+        return score;
+      };
+
+      return filtered.slice().sort((a, b) => calculateScore(b) - calculateScore(a));
+    }
+
+    return filtered;
   },
 
   /**
@@ -289,6 +331,52 @@ const Utils = {
     }
 
     return this.escapeHtml(text);
+  },
+
+  /**
+   * 从长文本（如详细描述）中提取包含关键词的上下文高亮摘要
+   * @param {string} text 原始长文本
+   * @param {string} keyword 搜索词
+   * @param {number} maxLen 摘要窗口大小（默认约 28 个字符）
+   * @returns {string} 包含 <mark> 高亮标签的安全 HTML 摘要片段
+   */
+  extractSnippet(text, keyword, maxLen = 28) {
+    if (!text || typeof text !== 'string') return '';
+    if (!keyword || typeof keyword !== 'string' || !keyword.trim()) return '';
+
+    const cleanKw = keyword.trim();
+    const lowerText = text.toLowerCase();
+    const lowerKw = cleanKw.toLowerCase();
+
+    // 1. 优先查找连续子串匹配位置
+    let matchIdx = lowerText.indexOf(lowerKw);
+
+    // 2. 如果未直接包含，查找子序列首字符位置
+    if (matchIdx === -1) {
+      const chars = [...lowerKw].filter(c => c.trim().length > 0);
+      if (chars.length > 0) {
+        matchIdx = lowerText.indexOf(chars[0]);
+      }
+    }
+
+    // 3. 计算截取窗口（前后对称扩展）
+    if (matchIdx === -1) {
+      const sub = text.slice(0, maxLen);
+      return this.highlightKeyword(sub, cleanKw) + (text.length > maxLen ? '…' : '');
+    }
+
+    const half = Math.floor(maxLen / 2);
+    let start = Math.max(0, matchIdx - half);
+    let end = Math.min(text.length, start + maxLen);
+    if (end - start < maxLen && start > 0) {
+      start = Math.max(0, end - maxLen);
+    }
+
+    const snippet = text.slice(start, end);
+    const prefix = start > 0 ? '…' : '';
+    const suffix = end < text.length ? '…' : '';
+
+    return prefix + this.highlightKeyword(snippet, cleanKw) + suffix;
   },
 
   /**

@@ -102,6 +102,25 @@ const App = {
     const highlightedTitle = Utils.highlightKeyword(item.title, this.filters.keyword);
     const highlightedLocation = Utils.highlightKeyword(item.location, this.filters.keyword);
 
+    // 智能命中摘要：若标题和地点均未命中，而详细描述命中了搜索词，提取并展示高亮上下文摘要
+    let snippetHtml = '';
+    const kw = this.filters.keyword && this.filters.keyword.trim();
+    if (kw && item.desc) {
+      const hitTitle = Utils.matchKeyword(item.title, kw);
+      const hitLocation = Utils.matchKeyword(item.location, kw);
+      if (!hitTitle && !hitLocation && Utils.matchKeyword(item.desc, kw)) {
+        const snippetText = Utils.extractSnippet(item.desc, kw, 26);
+        if (snippetText) {
+          snippetHtml = `
+            <div class="text-[11px] text-slate-500 bg-amber-50/70 border border-amber-200/70 rounded-xl px-2.5 py-1 flex items-center gap-1.5 mt-2">
+              <i class="fa-regular fa-comment-dots text-amber-600 text-[11px] shrink-0"></i>
+              <span class="truncate">描述匹配：${snippetText}</span>
+            </div>
+          `;
+        }
+      }
+    }
+
     // 相对时间展示
     const timeText = Utils.timeAgo(item.timestamp || item.date);
 
@@ -144,6 +163,7 @@ const App = {
               <i class="fa-solid fa-location-dot text-rose-500 text-[11px] shrink-0"></i>
               <span class="truncate">${highlightedLocation}</span>
             </div>
+            ${snippetHtml}
           </div>
         </div>
 
@@ -309,7 +329,10 @@ const App = {
     document.getElementById('detailLocation').innerText = item.location;
     document.getElementById('detailDate').innerText = item.date;
     document.getElementById('detailTimeAgo').innerText = Utils.timeAgo(item.timestamp || item.date);
-    document.getElementById('detailDesc').innerText = item.desc || '发布人未填写详细补充描述。';
+    const descContent = item.desc
+      ? Utils.highlightKeyword(item.desc, this.filters.keyword)
+      : '发布人未填写详细补充描述。';
+    document.getElementById('detailDesc').innerHTML = descContent;
     document.getElementById('detailContactType').innerText = item.contactType;
     document.getElementById('detailContactVal').innerText = item.contactVal;
     document.getElementById('detailPublisher').innerText = '发布者：' + (item.publisherName || '校内同学');

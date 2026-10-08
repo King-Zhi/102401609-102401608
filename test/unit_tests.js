@@ -755,6 +755,31 @@ const UnitTests = [
       assert.strictEqual(presetCard.img, 'assets/images/item_1001_card.jpg', '系统预设学生卡图片应自动恢复完整');
       assert.strictEqual(presetKeys.img, 'assets/images/item_1004_keys.jpg', '系统预设钥匙图片应自动恢复完整');
     }
+  },
+
+  {
+    name: '测试用例 47: 搜索关键词相关度智能排序与描述命中摘要提取',
+    category: '检索归因与排序测试 (filterItems & extractSnippet)',
+    description: '验证当搜索词在不同字段命中时，标题命中排在仅描述命中之前；且能正确从详细描述中提取带高亮标签的上下文摘要。',
+    testFn(assert) {
+      // 1. 验证上下文摘要提取
+      const desc = '黑色十骨天堂晴雨伞，手柄系有蓝色小熊挂绳，下雨天容易遗忘。目前暂存西三一楼保安室。';
+      const snippet = Utils.extractSnippet(desc, '下', 20);
+      assert.isTrue(snippet.includes('<mark class="bg-amber-200 text-amber-900 rounded px-1 font-semibold">下</mark>'), '摘要必须包含下字的高亮mark标签');
+      assert.isTrue(snippet.includes('雨天'), '摘要必须包含命中词的上下文语境');
+
+      // 2. 验证搜索相关度智能排序（标题命中 > 仅描述命中）
+      const list = [
+        { id: 2, title: '西三教学楼捡到黑色雨伞', desc: '下雨天容易遗忘', location: '西三', category: '其他物品', type: 'found', status: 'open' },
+        { id: 1, title: '文科楼拾获《高等数学》下册', desc: '书内有笔记', location: '文科楼遮阳伞下', category: '书籍文具', type: 'found', status: 'open' }
+      ];
+
+      // 当搜索“下”时，ID 1（标题直接包含“下”）的相关度得分必须高于 ID 2（仅描述包含“下”），因此排在第 1 位
+      const searchRes = Utils.filterItems(list, { keyword: '下' });
+      assert.strictEqual(searchRes.length, 2, '两个物品都应被检索出来');
+      assert.strictEqual(searchRes[0].id, 1, '标题命中高权重的物品应排在第 1 位');
+      assert.strictEqual(searchRes[1].id, 2, '仅描述命中的物品应排在第 2 位');
+    }
   }
 ];
 
