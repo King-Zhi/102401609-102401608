@@ -139,7 +139,7 @@ const App = {
     `;
 
     return `
-      <div onclick="App.openDetail(${item.id})" class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-sm card-hover flex flex-col justify-between cursor-pointer space-y-3">
+      <div onclick="App.openDetail(${item.id})" class="item-card bg-white rounded-3xl p-4 border border-slate-200/80 shadow-sm card-hover flex flex-col justify-between cursor-pointer space-y-3">
         <!-- 卡片主体上部 -->
         <div class="space-y-3">
           <!-- 图片与顶部状态条 -->
@@ -882,6 +882,8 @@ const App = {
     }, 2200);
   }
 };
+
+if (typeof window !== 'undefined') window.App = App;
 
 // 页面加载完成后启动
 document.addEventListener('DOMContentLoaded', () => {

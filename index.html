@@ -3,78 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>校园失物招领平台 - 2026秋软件工程结对作业</title>
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('CAMPUS_HOME_THEME') === 'day' ? 'day' : 'night';
+    } catch (_) {
+      document.documentElement.dataset.theme = 'night';
+    }
+  </script>
+  <title>福州大学失物信息共享平台</title>
   <!-- 引入现代 UI 样式支持 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/home.css">
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+<body class="dark-app flex flex-col min-h-screen">
 
   <!-- 顶部全局导航栏 -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+  <header class="dark-header sticky top-0 z-40">
+    <div class="dark-header-inner max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <!-- 品牌 Logo 与标题 -->
       <div class="flex items-center gap-3 cursor-pointer" onclick="App.resetFilters()">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
-          <i class="fa-solid fa-graduation-cap text-lg"></i>
+        <div class="dark-brand-mark">
+          <i class="fa-solid fa-box-open"></i>
         </div>
         <div>
-          <h1 class="font-bold text-base md:text-lg text-slate-800 tracking-tight flex items-center gap-2">
-            校园失物招领平台
-            <span class="hidden sm:inline-block text-[11px] font-normal px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">福州大学校内专用</span>
+          <h1 class="dark-brand-title">
+            福州大学失物信息共享平台
           </h1>
-          <p class="text-[11px] text-slate-400 hidden sm:block">让每一件失物更快物归原主 · 软件工程结对作业</p>
+          <p class="dark-brand-subtitle">让遗失物品重新找到主人</p>
         </div>
       </div>
 
       <!-- 右侧操作区 -->
-      <div class="flex items-center gap-2.5">
-        <!-- 助教测试快捷工具下拉菜单 -->
-        <div class="relative">
-          <button onclick="App.toggleTestingDropdown()" class="px-3 py-2 text-xs font-medium text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-flask-vial text-emerald-600"></i>
-            <span class="hidden sm:inline">评测与测试</span>
-            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
-          </button>
-          <div id="testDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 text-xs text-slate-700">
-            <div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 border-b border-slate-100">助教评测辅助功能</div>
-            <a href="test/test_runner.html" target="_blank" class="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition">
-              <i class="fa-solid fa-vial-circle-check text-emerald-600"></i>
-              <span>运行自动化单元测试</span>
-            </a>
-            <button onclick="App.handleResetData()" class="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
-              <i class="fa-solid fa-rotate-left text-amber-500"></i>
-              <span>重置为初始精选校园数据</span>
-            </button>
-            <button onclick="App.handleExportData()" class="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
-              <i class="fa-solid fa-file-export text-blue-500"></i>
-              <span>导出当前数据 (JSON备份)</span>
-            </button>
-          </div>
-        </div>
-
+      <nav class="dark-nav flex items-center gap-2.5" aria-label="主导航">
+        <button id="themeToggle" type="button" class="dark-theme-toggle" aria-label="切换到日间模式" aria-pressed="true" title="切换到日间模式">
+          <i class="fa-regular fa-moon" aria-hidden="true"></i><span>夜间</span>
+        </button>
         <!-- 我的发布入口按钮 -->
-        <button onclick="App.openMyPostsModal()" class="px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition flex items-center gap-1.5">
+        <button onclick="document.getElementById('recordsSection').scrollIntoView({behavior:'smooth'})" class="dark-nav-link"><i class="fa-regular fa-compass"></i><span>浏览信息</span></button>
+        <button onclick="App.openMyPostsModal()" class="dark-nav-link">
           <i class="fa-regular fa-user text-slate-500"></i>
           <span>我的发布</span>
           <span id="headerMyCount" class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">2</span>
         </button>
 
         <!-- 突出发布主按钮 -->
-        <button onclick="App.openPublishModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-1.5">
+        <button onclick="App.openPublishModal()" class="dark-publish-button">
           <i class="fa-solid fa-plus text-xs"></i>
           <span>发布信息</span>
         </button>
-      </div>
+      </nav>
     </div>
   </header>
 
   <!-- 主体区域 -->
-  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+  <main class="dark-main max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
 
     <!-- 检索与主筛选区 -->
-    <div class="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/80 shadow-sm space-y-4">
+    <section class="dark-intro">
+      <div>
+        <span class="dark-eyebrow"><i class="fa-solid fa-location-dot"></i> 福州大学 · 旗山校区</span>
+        <h2>校园失物招领</h2>
+        <p>发布遗失信息，或看看最近有哪些物品正在等待认领。</p>
+      </div>
+      <button onclick="document.getElementById('recordsSection').scrollIntoView({behavior:'smooth'})" class="dark-text-button">浏览全部信息 <i class="fa-solid fa-arrow-down"></i></button>
+    </section>
+
+    <section id="featuredSection" class="dark-featured-section" aria-label="最新寻物和招领信息">
+      <div class="dark-section-heading"><h2>最新线索</h2><span id="featuredCount" class="dark-section-count"></span></div>
+      <div id="featuredGrid" class="dark-featured-grid"></div>
+    </section>
+
+    <section class="search-panel dark-search-panel space-y-4" aria-label="搜索和筛选">
       <!-- 搜索输入框 -->
       <div class="relative">
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -85,7 +86,7 @@
           id="searchInput"
           oninput="App.onSearchInput(this.value)"
           placeholder="搜索物品名称、遗失地点、特征关键词（如：校园卡、AirPods、图书馆、水杯...）"
-          class="w-full pl-11 pr-24 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition shadow-inner"
+          class="dark-search-input w-full pl-11 pr-24 py-3.5 border text-sm outline-none transition"
         >
         <!-- 清空按钮 -->
         <button id="clearSearchBtn" onclick="App.clearSearch()" class="hidden absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm">
@@ -94,7 +95,7 @@
       </div>
 
       <!-- 热门快捷搜索标签 -->
-      <div class="flex items-center gap-2 flex-wrap text-xs text-slate-500">
+      <div class="dark-quick-search flex items-center gap-2 flex-wrap text-xs">
         <span class="font-medium text-slate-400 flex items-center gap-1">
           <i class="fa-solid fa-fire text-rose-500"></i> 热门搜索：
         </span>
@@ -107,28 +108,28 @@
       </div>
 
       <!-- 多维度联动过滤栏 -->
-      <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <div class="filter-toolbar dark-filter-toolbar pt-3 flex flex-wrap items-center justify-between gap-3">
         <!-- 主类型 Tab: 全部 / 寻物 / 招领 -->
-        <div class="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-medium">
-          <button id="tabTypeAll" onclick="App.setTypeFilter('all')" class="px-3.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold transition">
+        <div class="type-tabs inline-flex p-1 text-xs font-medium">
+          <button id="tabTypeAll" onclick="App.setTypeFilter('all')" class="dark-filter-tab selected">
             全部信息
           </button>
-          <button id="tabTypeLost" onclick="App.setTypeFilter('lost')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
+          <button id="tabTypeLost" onclick="App.setTypeFilter('lost')" class="dark-filter-tab flex items-center gap-1">
             <i class="fa-solid fa-circle-question text-rose-500"></i>
-            <span>寻物启事 (求助失物)</span>
+            <span>寻物启事</span>
           </button>
-          <button id="tabTypeFound" onclick="App.setTypeFilter('found')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
+          <button id="tabTypeFound" onclick="App.setTypeFilter('found')" class="dark-filter-tab flex items-center gap-1">
             <i class="fa-solid fa-bullhorn text-emerald-600"></i>
-            <span>失物招领 (拾金不昧)</span>
+            <span>失物招领</span>
           </button>
         </div>
 
         <!-- 下拉辅助多维筛选：物品分类、地点范围、解决状态 -->
-        <div class="flex items-center gap-2 text-xs">
+        <div class="filter-selects dark-filter-selects flex items-center gap-2 text-xs">
           <!-- 物品分类筛选 -->
-          <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+          <div class="dark-select-wrap flex items-center gap-1">
             <span class="text-slate-400">分类:</span>
-            <select id="selectCategory" onchange="App.onCategoryChange(this.value)" class="bg-transparent outline-none font-medium text-slate-700 cursor-pointer">
+            <select id="selectCategory" onchange="App.onCategoryChange(this.value)" class="dark-select">
               <option value="all">全部分类</option>
               <option value="校园卡/证件">校园卡/证件</option>
               <option value="数码电子">数码电子</option>
@@ -139,9 +140,9 @@
           </div>
 
           <!-- 地点大区筛选 -->
-          <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+          <div class="dark-select-wrap flex items-center gap-1">
             <span class="text-slate-400">地点:</span>
-            <select id="selectLocation" onchange="App.onLocationChange(this.value)" class="bg-transparent outline-none font-medium text-slate-700 cursor-pointer">
+            <select id="selectLocation" onchange="App.onLocationChange(this.value)" class="dark-select">
               <option value="all">全部区域</option>
               <option value="食堂">各大食堂</option>
               <option value="图书馆">图书馆</option>
@@ -152,9 +153,9 @@
           </div>
 
           <!-- 状态筛选 -->
-          <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+          <div class="dark-select-wrap flex items-center gap-1">
             <span class="text-slate-400">状态:</span>
-            <select id="selectStatus" onchange="App.onStatusChange(this.value)" class="bg-transparent outline-none font-medium text-slate-700 cursor-pointer">
+            <select id="selectStatus" onchange="App.onStatusChange(this.value)" class="dark-select">
               <option value="all">所有状态</option>
               <option value="open">仅看进行中</option>
               <option value="solved">已找到/已归还</option>
@@ -162,15 +163,18 @@
           </div>
 
           <!-- 重置过滤按钮 -->
-          <button onclick="App.resetFilters()" title="重置筛选条件" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+          <button onclick="App.resetFilters()" title="重置筛选条件" class="dark-reset-button">
             <i class="fa-solid fa-arrows-rotate"></i>
           </button>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- 统计与快捷视图条 -->
-    <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+    <section id="recordsSection" class="dark-records-section">
+    <div class="dark-section-heading dark-records-heading">
+        <div><h2>全部物品信息</h2></div>
+      <div class="result-summary flex items-center justify-between text-xs text-slate-500 px-1">
       <div id="resultCountNotice" class="font-medium">
         正在展示共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">0</span> 条相关失物招领
       </div>
@@ -179,15 +183,16 @@
         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 招领中</span>
         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-400"></span> 已解决结贴</span>
       </div>
+      </div>
     </div>
 
     <!-- 物品信息卡片瀑布流网格 -->
-    <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
+    <div id="itemsGrid" class="dark-items-grid items-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
       <!-- 动态卡片容器 -->
     </div>
 
     <!-- 无搜索结果的空状态 -->
-    <div id="emptyState" class="hidden bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-sm space-y-3">
+    <div id="emptyState" class="hidden dark-empty-state space-y-3">
       <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto text-2xl">
         <i class="fa-regular fa-folder-open"></i>
       </div>
@@ -201,19 +206,20 @@
         </button>
       </div>
     </div>
+    </section>
 
   </main>
 
   <!-- 底部页脚 -->
-  <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+  <footer class="dark-footer mt-12 py-6 text-center text-xs text-slate-400">
     <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
       <div class="flex items-center gap-2">
-        <i class="fa-solid fa-code text-emerald-600"></i>
-        <span>2026秋软件工程结对作业（第二次之程序实现）· 福州大学</span>
+        <i class="fa-solid fa-box-open"></i>
+        <span>福州大学失物信息共享平台</span>
       </div>
       <div class="flex items-center gap-4 text-slate-500">
-        <a href="test/test_runner.html" target="_blank" class="hover:text-emerald-700 transition">自动化单元测试</a>
-        <a href="README.md" target="_blank" class="hover:text-emerald-700 transition">项目说明文档</a>
+        <button onclick="App.openMyPostsModal()" class="dark-footer-link">我的发布</button>
+        <button onclick="App.openPublishModal()" class="dark-footer-link">发布信息</button>
       </div>
     </div>
   </footer>
@@ -488,5 +494,6 @@
   <script src="js/utils.js"></script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/home.js"></script>
 </body>
 </html>
