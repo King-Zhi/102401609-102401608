@@ -780,6 +780,39 @@ const UnitTests = [
       assert.strictEqual(searchRes[0].id, 1, '标题命中高权重的物品应排在第 1 位');
       assert.strictEqual(searchRes[1].id, 2, '仅描述命中的物品应排在第 2 位');
     }
+  },
+
+  {
+    name: '测试用例 48: 状态自动优先级分层排序（进行中帖子优先置前，已解决帖子自动后移）',
+    category: '状态分层排序测试 (filterItems)',
+    description: '验证列表中存在交错穿插的已解决（solved）和进行中（open）帖子时，进行中帖子自动置顶排在最前，已解决帖子自动沉底后移。',
+    testFn(assert) {
+      const mockList = [
+        { id: 1, title: '卡片A', status: 'open', location: '食堂', category: '校园卡/证件', type: 'found' },
+        { id: 2, title: '雨伞B', status: 'solved', location: '教室', category: '其他物品', type: 'found' },
+        { id: 3, title: '钥匙C', status: 'open', location: '操场', category: '生活钥匙', type: 'lost' },
+        { id: 4, title: '耳机D', status: 'solved', location: '图书馆', category: '数码电子', type: 'lost' },
+        { id: 5, title: '课本E', status: 'open', location: '教学楼', category: '书籍文具', type: 'found' }
+      ];
+
+      // 默认状态（status: 'all'，无关键词）
+      const sorted = Utils.filterItems(mockList, {});
+      assert.strictEqual(sorted.length, 5);
+      
+      // 前 3 项必须全部为进行中（open），保持原有录入时间顺序
+      assert.strictEqual(sorted[0].id, 1, '第1个应为进行中的卡片A');
+      assert.strictEqual(sorted[1].id, 3, '第2个应为进行中的钥匙C');
+      assert.strictEqual(sorted[2].id, 5, '第3个应为进行中的课本E');
+      assert.strictEqual(sorted[0].status, 'open');
+      assert.strictEqual(sorted[1].status, 'open');
+      assert.strictEqual(sorted[2].status, 'open');
+
+      // 后 2 项必须自动沉底排列为已解决（solved）
+      assert.strictEqual(sorted[3].id, 2, '第4个应为已解决的雨伞B');
+      assert.strictEqual(sorted[4].id, 4, '第5个应为已解决的耳机D');
+      assert.strictEqual(sorted[3].status, 'solved');
+      assert.strictEqual(sorted[4].status, 'solved');
+    }
   }
 ];
 

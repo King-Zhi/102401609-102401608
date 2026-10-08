@@ -766,7 +766,9 @@ const App = {
 
   renderMyPosts() {
     const all = DataManager.getItems();
-    const myItems = all.filter(it => it.isMine);
+    const myItems = all
+      .filter(it => it.isMine)
+      .sort((a, b) => (a.status === 'solved' ? 1 : 0) - (b.status === 'solved' ? 1 : 0));
 
     document.getElementById('myTotalCount').innerText = myItems.length;
     document.getElementById('myOpenCount').innerText = myItems.filter(it => it.status === 'open').length;

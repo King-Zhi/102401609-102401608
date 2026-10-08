@@ -165,47 +165,62 @@ const Utils = {
       return true;
     });
 
-    // 6. 搜索相关度智能排序（标题命中 > 地点命中 > 分类命中 > 详细描述命中）
-    if (kw) {
-      const calculateScore = (item) => {
-        let score = 0;
-        const titleLower = (item.title || '').toLowerCase();
-        const locLower = (item.location || '').toLowerCase();
-        const descLower = (item.desc || '').toLowerCase();
+    // 6. 智能排序与分层展示：
+    // 规则 A（状态分层）：进行中（open）的帖子优先排在前面，已解决（solved）的帖子自动往后排，避免穿插混乱
+    // 规则 B（搜索相关度）：在相同状态内部，若存在搜索词，则按相关度得分降序（标题 > 地点 > 分类 > 描述）
+    const calculateScore = kw ? (item) => {
+      let score = 0;
+      const titleLower = (item.title || '').toLowerCase();
+      const locLower = (item.location || '').toLowerCase();
+      const descLower = (item.desc || '').toLowerCase();
 
-        // 标题命中（最高权重）
-        if (titleLower.includes(kw)) {
-          score += 100;
-        } else if (this.matchKeyword(item.title, kw)) {
-          score += 70;
+      // 标题命中（最高权重）
+      if (titleLower.includes(kw)) {
+        score += 100;
+      } else if (this.matchKeyword(item.title, kw)) {
+        score += 70;
+      }
+
+      // 地点命中
+      if (locLower.includes(kw)) {
+        score += 40;
+      } else if (this.matchKeyword(item.location, kw)) {
+        score += 25;
+      }
+
+      // 分类命中
+      if (this.matchKeyword(item.category, kw)) {
+        score += 20;
+      }
+
+      // 详细描述命中（补充权重）
+      if (descLower.includes(kw)) {
+        score += 15;
+      } else if (item.desc && this.matchKeyword(item.desc, kw)) {
+        score += 10;
+      }
+
+      return score;
+    } : null;
+
+    return filtered.slice().sort((a, b) => {
+      // 1. 状态分层：未解决（open）优先，已解决（solved）沉底往后排
+      const isSolvedA = a.status === 'solved' ? 1 : 0;
+      const isSolvedB = b.status === 'solved' ? 1 : 0;
+      if (isSolvedA !== isSolvedB) {
+        return isSolvedA - isSolvedB;
+      }
+
+      // 2. 搜索相关度排序（仅在相同状态且存在关键词时比较）
+      if (calculateScore) {
+        const scoreDiff = calculateScore(b) - calculateScore(a);
+        if (scoreDiff !== 0) {
+          return scoreDiff;
         }
+      }
 
-        // 地点命中
-        if (locLower.includes(kw)) {
-          score += 40;
-        } else if (this.matchKeyword(item.location, kw)) {
-          score += 25;
-        }
-
-        // 分类命中
-        if (this.matchKeyword(item.category, kw)) {
-          score += 20;
-        }
-
-        // 详细描述命中（补充权重）
-        if (descLower.includes(kw)) {
-          score += 15;
-        } else if (item.desc && this.matchKeyword(item.desc, kw)) {
-          score += 10;
-        }
-
-        return score;
-      };
-
-      return filtered.slice().sort((a, b) => calculateScore(b) - calculateScore(a));
-    }
-
-    return filtered;
+      return 0;
+    });
   },
 
   /**
