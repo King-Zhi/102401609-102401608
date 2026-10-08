@@ -166,7 +166,7 @@ const DataManager = {
               }
             }
 
-            // 仅对用户自建的物品（ID 不在 1001~1006 预设范围内）：修正因旧版本 bug 误赋予的预设示例图片
+            // 仅对用户自建的物品（ID 不在 1001~1006 预设范围内）：规范未上传图片时的缺省值，保持为空值占位
             if (!PRESET_IDS.includes(it.id) && typeof it.img === 'string' && it.img.startsWith('assets/images/')) {
               it.img = '';
               hasUpgrade = true;

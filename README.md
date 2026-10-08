@@ -153,7 +153,7 @@ campus-lost-found/
   43. `DataManager.addItem`: 同一毫秒创建记录时 ID 不重复
   44. `filterItems`: 校园常用简称与拼音首字母模糊匹配（如“高数”匹配“高等数学”）
   45. `highlightKeyword`: 子序列模糊匹配精准字符高亮与防 XSS 渲染
-  46. `DataManager.addItem`: 用户新发布物品未上传图片时保留空字符串，不误赋预设示例图
+  46. `DataManager.addItem`: 用户未上传图片时规范保持空值与缺省占位
   47. `filterItems`: 搜索关键词相关度智能排序（标题优先匹配）与描述命中摘要提取
 
 ## 搜索与日期规则

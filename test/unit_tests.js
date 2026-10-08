@@ -675,9 +675,9 @@ const UnitTests = [
   },
 
   {
-    name: '测试用例 46: 用户新发布物品未上传图片时应保留空字符串，不误赋预设示例图且历史误赋数据自动修复',
+    name: '测试用例 46: 用户新发布物品未上传图片时应规范保持空值与缺省占位',
     category: '发布管理测试 (addItem & getItems)',
-    description: '验证当用户未上传实物照片时，新发布记录的 img 字段严格保持为空字符串，不误用 AirPods 等示例图；且历史数据中被误赋预设示例图的用户记录能自动清洗修复。',
+    description: '验证当用户未上传实物照片时，新发布记录的 img 字段严格保持为空字符串，并正确与预设演示数据划分隔离边界。',
     testFn(assert, storage) {
       // 1. 添加未上传图片的记录，验证 img 不会被默认赋值为示例图
       const newItem = DataManager.addItem({
