@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>校园失物招领平台 - 2026秋软件工程结对作业</title>
+  <title>校园失物招领平台 - 福州大学</title>
   <!-- 引入现代 UI 样式支持 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -24,41 +24,17 @@
             校园失物招领平台
             <span class="hidden sm:inline-block text-[11px] font-normal px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">福州大学校内专用</span>
           </h1>
-          <p class="text-[11px] text-slate-400 hidden sm:block">让每一件失物更快物归原主 · 软件工程结对作业</p>
+          <p class="text-[11px] text-slate-400 hidden sm:block">让每一件失物更快物归原主 · 福州大学校园互助平台</p>
         </div>
       </div>
 
       <!-- 右侧操作区 -->
       <div class="flex items-center gap-2.5">
-        <!-- 助教测试快捷工具下拉菜单 -->
-        <div class="relative">
-          <button onclick="App.toggleTestingDropdown()" class="px-3 py-2 text-xs font-medium text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-flask-vial text-emerald-600"></i>
-            <span class="hidden sm:inline">评测与测试</span>
-            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
-          </button>
-          <div id="testDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 text-xs text-slate-700">
-            <div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 border-b border-slate-100">助教评测辅助功能</div>
-            <a href="test/test_runner.html" target="_blank" class="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition">
-              <i class="fa-solid fa-vial-circle-check text-emerald-600"></i>
-              <span>运行自动化单元测试</span>
-            </a>
-            <button onclick="App.handleResetData()" class="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
-              <i class="fa-solid fa-rotate-left text-amber-500"></i>
-              <span>重置为初始精选校园数据</span>
-            </button>
-            <button onclick="App.handleExportData()" class="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
-              <i class="fa-solid fa-file-export text-blue-500"></i>
-              <span>导出当前数据 (JSON备份)</span>
-            </button>
-          </div>
-        </div>
-
         <!-- 我的发布入口按钮 -->
         <button onclick="App.openMyPostsModal()" class="px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition flex items-center gap-1.5">
           <i class="fa-regular fa-user text-slate-500"></i>
           <span>我的发布</span>
-          <span id="headerMyCount" class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">2</span>
+          <span id="headerMyCount" class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
         </button>
 
         <!-- 突出发布主按钮 -->
@@ -115,11 +91,11 @@
           </button>
           <button id="tabTypeLost" onclick="App.setTypeFilter('lost')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
             <i class="fa-solid fa-circle-question text-rose-500"></i>
-            <span>寻物启事 (求助失物)</span>
+            <span>寻物启事</span>
           </button>
           <button id="tabTypeFound" onclick="App.setTypeFilter('found')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
             <i class="fa-solid fa-bullhorn text-emerald-600"></i>
-            <span>失物招领 (拾金不昧)</span>
+            <span>失物招领</span>
           </button>
         </div>
 
@@ -243,13 +219,13 @@
             <label class="relative flex items-center justify-center p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50/40">
               <input type="radio" name="formType" value="lost" checked class="peer sr-only" onchange="App.onFormTypeChange('lost')">
               <span class="flex items-center gap-2 font-bold text-slate-600 peer-checked:text-rose-600">
-                <i class="fa-solid fa-circle-question text-base"></i> 我丢失了 (寻物启事)
+                <i class="fa-solid fa-circle-question text-base"></i> 我丢失了 (寻物)
               </span>
             </label>
             <label class="relative flex items-center justify-center p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/40">
               <input type="radio" name="formType" value="found" class="peer sr-only" onchange="App.onFormTypeChange('found')">
               <span class="flex items-center gap-2 font-bold text-slate-600 peer-checked:text-emerald-700">
-                <i class="fa-solid fa-bullhorn text-base"></i> 我拾获了 (失物招领)
+                <i class="fa-solid fa-bullhorn text-base"></i> 我拾获了 (招领)
               </span>
             </label>
           </div>
@@ -308,7 +284,7 @@
             </div>
             <div class="text-[11px] text-slate-400 space-y-0.5">
               <p>支持 PNG、JPG、WEBP 格式图片（不超过 2MB）</p>
-              <p>实物照片为选填项，未上传时将展示默认占位图</p>
+              <p>上传实物或现场照片有助于更快物归原主</p>
             </div>
           </div>
         </div>
@@ -353,7 +329,6 @@
             <i class="fa-solid fa-camera-retro text-xl"></i>
           </div>
           <span class="text-sm font-semibold text-slate-600">暂无实物图片</span>
-          <span class="text-xs text-slate-400 mt-0.5">发布者未上传现场或实物照片</span>
         </div>
         <button onclick="App.closeDetailModal()" class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm transition">
           <i class="fa-solid fa-xmark"></i>
@@ -379,22 +354,22 @@
             <h2 id="detailTitle" class="text-lg font-bold text-slate-800">物品标题</h2>
             <span id="detailTimeAgo" class="text-slate-400 whitespace-nowrap text-xs">刚刚</span>
           </div>
-          <p id="detailPublisher" class="text-[11px] text-slate-400 mt-1">发布人：热心同学</p>
+          <p id="detailPublisher" class="text-[11px] text-slate-400 mt-1">发布人：校内同学</p>
         </div>
 
         <!-- 关键属性列表 -->
         <div class="bg-slate-50 rounded-2xl p-4 space-y-2 border border-slate-100">
           <div class="flex items-center text-slate-600">
-            <span class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-rose-500"></i> 发生地点：</span>
+            <span id="detailLocationLabel" class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-rose-500"></i> 地点：</span>
             <span id="detailLocation" class="font-medium text-slate-800 flex-1">旗山校区图书馆</span>
           </div>
           <div class="flex items-center text-slate-600">
-            <span class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-regular fa-calendar text-blue-500"></i> 发生时间：</span>
+            <span id="detailDateLabel" class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-regular fa-calendar text-blue-500"></i> 日期：</span>
             <span id="detailDate" class="font-medium text-slate-800 flex-1">2026-10-02</span>
           </div>
           <div class="flex items-center text-slate-600">
             <span class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-tag text-amber-500"></i> 当前状态：</span>
-            <span id="detailStatusText" class="font-bold text-emerald-600">寻找中 (尚未解决)</span>
+            <span id="detailStatusText" class="font-bold text-emerald-600">进行中</span>
           </div>
         </div>
 

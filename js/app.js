@@ -134,7 +134,6 @@ const App = {
           <i class="fa-solid fa-camera-retro text-base"></i>
         </div>
         <span class="text-xs font-semibold text-slate-500">暂无实物图片</span>
-        <span class="text-[10px] text-slate-400 mt-0.5">发布者未上传照片</span>
       </div>
     `;
 
@@ -328,6 +327,20 @@ const App = {
     document.getElementById('detailCategoryBadge').innerText = item.category;
     document.getElementById('detailLocation').innerText = item.location;
     document.getElementById('detailDate').innerText = item.date;
+
+    const locLabel = document.getElementById('detailLocationLabel');
+    if (locLabel) {
+      locLabel.innerHTML = item.type === 'lost'
+        ? '<i class="fa-solid fa-location-dot text-rose-500"></i> 遗失地点：'
+        : '<i class="fa-solid fa-location-dot text-emerald-600"></i> 拾获地点：';
+    }
+    const dateLabel = document.getElementById('detailDateLabel');
+    if (dateLabel) {
+      dateLabel.innerHTML = item.type === 'lost'
+        ? '<i class="fa-regular fa-calendar text-blue-500"></i> 遗失日期：'
+        : '<i class="fa-regular fa-calendar text-blue-500"></i> 拾获日期：';
+    }
+
     document.getElementById('detailTimeAgo').innerText = Utils.timeAgo(item.timestamp || item.date);
     const descContent = item.desc
       ? Utils.highlightKeyword(item.desc, this.filters.keyword)
@@ -335,15 +348,19 @@ const App = {
     document.getElementById('detailDesc').innerHTML = descContent;
     document.getElementById('detailContactType').innerText = item.contactType;
     document.getElementById('detailContactVal').innerText = item.contactVal;
-    document.getElementById('detailPublisher').innerText = '发布者：' + (item.publisherName || '校内同学');
+
+    const publisherName = (!item.publisherName || item.publisherName === '我发布的')
+      ? (item.isMine ? '校内同学（我）' : '校内同学')
+      : item.publisherName;
+    document.getElementById('detailPublisher').innerText = '发布者：' + publisherName;
 
     // 类型徽章
     const typeBadge = document.getElementById('detailTypeBadge');
     if (item.type === 'lost') {
-      typeBadge.innerText = '寻物启事 (找失物)';
+      typeBadge.innerText = '寻物启事';
       typeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-rose-600 shadow';
     } else {
-      typeBadge.innerText = '失物招领 (找失主)';
+      typeBadge.innerText = '失物招领';
       typeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-emerald-600 shadow';
     }
 
@@ -351,14 +368,14 @@ const App = {
     const statusBadge = document.getElementById('detailStatusBadge');
     const statusText = document.getElementById('detailStatusText');
     if (item.status === 'solved') {
-      statusBadge.innerText = '已解决 (结贴)';
+      statusBadge.innerText = '已解决';
       statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700 shadow';
-      statusText.innerText = '已成功找回 / 已归还原主（信息已结贴）';
+      statusText.innerText = '已成功找回 / 已归还原主';
       statusText.className = 'font-bold text-slate-500';
     } else {
       statusBadge.innerText = '进行中';
       statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 shadow';
-      statusText.innerText = item.type === 'lost' ? '寻找中（尚未找回）' : '招领中（等待失主认领）';
+      statusText.innerText = item.type === 'lost' ? '寻找中' : '招领中';
       statusText.className = 'font-bold text-emerald-600';
     }
 
@@ -702,7 +719,7 @@ const App = {
         this.showToast('修改成功，信息已更新', 'success');
       } else {
         itemPayload.img = this.uploadedImageBase64 || '';
-        itemPayload.publisherName = '我发布的';
+        itemPayload.publisherName = '校内同学（我）';
         updatedItem = DataManager.addItem(itemPayload);
         if (!updatedItem) {
           this.showToast('发布失败，浏览器存储空间可能不足，请减少图片大小后重试', 'error');
@@ -835,13 +852,13 @@ const App = {
   },
 
   handleResetData() {
-    if (confirm('确定要将数据重置为初始的福州大学精选校园测试数据吗？已发布的数据将被清空重置。')) {
+    if (confirm('确定要恢复为初始的福州大学校园精选示范数据吗？已发布的数据将被清空重置。')) {
       if (!DataManager.resetToDefault()) {
         this.showToast('重置失败，浏览器无法保存数据，原记录未更改', 'error');
         return;
       }
       this.refresh();
-      this.showToast('✅ 已恢复为初始预设测试数据！', 'success');
+      this.showToast('✅ 已恢复为初始预设数据！', 'success');
       this.toggleTestingDropdown();
     }
   },
