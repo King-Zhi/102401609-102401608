@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景圆角矩形 -->
+  <rect width="64" height="64" rx="16" fill="url(#brandGrad)"/>
+  <!-- 学士帽顶平面 -->
+  <path d="M32 14 L56 26 L32 38 L8 26 Z" fill="#ffffff"/>
+  <!-- 帽子底部弧形围栏 -->
+  <path d="M19 32.5 V42 C19 47.5 45 47.5 45 42 V32.5 C41.2 35.2 36.8 36.5 32 36.5 C27.2 36.5 22.8 35.2 19 32.5 Z" fill="#ffffff" fill-opacity="0.95"/>
+  <!-- 流苏纽扣与垂挂流苏 -->
+  <ellipse cx="32" cy="26" rx="2.5" ry="1.8" fill="#059669"/>
+  <path d="M49 29.5 V43" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <polygon points="46.5,43 51.5,43 52,48.5 46,48.5" fill="#ffffff"/>
+</svg>

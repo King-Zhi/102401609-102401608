@@ -22,15 +22,27 @@ const App = {
   isSubmitting: false,
 
   /**
+   * 限制日期选择在合理业务周期内（近90天/一学期内至今天）
+   */
+  updateDateInputBounds(input = document.getElementById('formDate')) {
+    if (!input) return;
+    const today = Utils.formatLocalDate();
+    const minDateObj = new Date();
+    minDateObj.setDate(minDateObj.getDate() - 90);
+    const minDate = Utils.formatLocalDate(minDateObj);
+    input.max = today;
+    input.min = minDate;
+  },
+
+  /**
    * 应用初始化
    */
   init() {
-    // 默认发布日期设为今天
-    const today = Utils.formatLocalDate();
+    // 默认发布日期设为今天，限制在近 90 天（一学期内）至今天
     const dateInput = document.getElementById('formDate');
     if (dateInput) {
-      dateInput.value = today;
-      dateInput.max = today;
+      dateInput.value = Utils.formatLocalDate();
+      this.updateDateInputBounds(dateInput);
     }
 
     // 点击页面其他区域自动收起测试工具下拉
@@ -134,7 +146,6 @@ const App = {
           <i class="fa-solid fa-camera-retro text-base"></i>
         </div>
         <span class="text-xs font-semibold text-slate-500">暂无实物图片</span>
-        <span class="text-[10px] text-slate-400 mt-0.5">发布者未上传照片</span>
       </div>
     `;
 
@@ -328,6 +339,20 @@ const App = {
     document.getElementById('detailCategoryBadge').innerText = item.category;
     document.getElementById('detailLocation').innerText = item.location;
     document.getElementById('detailDate').innerText = item.date;
+
+    const locLabel = document.getElementById('detailLocationLabel');
+    if (locLabel) {
+      locLabel.innerHTML = item.type === 'lost'
+        ? '<i class="fa-solid fa-location-dot text-rose-500"></i> 遗失地点：'
+        : '<i class="fa-solid fa-location-dot text-emerald-600"></i> 拾获地点：';
+    }
+    const dateLabel = document.getElementById('detailDateLabel');
+    if (dateLabel) {
+      dateLabel.innerHTML = item.type === 'lost'
+        ? '<i class="fa-regular fa-calendar text-blue-500"></i> 遗失日期：'
+        : '<i class="fa-regular fa-calendar text-blue-500"></i> 拾获日期：';
+    }
+
     document.getElementById('detailTimeAgo').innerText = Utils.timeAgo(item.timestamp || item.date);
     const descContent = item.desc
       ? Utils.highlightKeyword(item.desc, this.filters.keyword)
@@ -335,15 +360,19 @@ const App = {
     document.getElementById('detailDesc').innerHTML = descContent;
     document.getElementById('detailContactType').innerText = item.contactType;
     document.getElementById('detailContactVal').innerText = item.contactVal;
-    document.getElementById('detailPublisher').innerText = '发布者：' + (item.publisherName || '校内同学');
+
+    const publisherName = (!item.publisherName || item.publisherName === '我发布的')
+      ? (item.isMine ? '校内同学（我）' : '校内同学')
+      : item.publisherName;
+    document.getElementById('detailPublisher').innerText = '发布者：' + publisherName;
 
     // 类型徽章
     const typeBadge = document.getElementById('detailTypeBadge');
     if (item.type === 'lost') {
-      typeBadge.innerText = '寻物启事 (找失物)';
+      typeBadge.innerText = '寻物启事';
       typeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-rose-600 shadow';
     } else {
-      typeBadge.innerText = '失物招领 (找失主)';
+      typeBadge.innerText = '失物招领';
       typeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-emerald-600 shadow';
     }
 
@@ -351,14 +380,14 @@ const App = {
     const statusBadge = document.getElementById('detailStatusBadge');
     const statusText = document.getElementById('detailStatusText');
     if (item.status === 'solved') {
-      statusBadge.innerText = '已解决 (结贴)';
+      statusBadge.innerText = '已解决';
       statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700 shadow';
-      statusText.innerText = '已成功找回 / 已归还原主（信息已结贴）';
+      statusText.innerText = '已成功找回 / 已归还原主';
       statusText.className = 'font-bold text-slate-500';
     } else {
       statusBadge.innerText = '进行中';
       statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 shadow';
-      statusText.innerText = item.type === 'lost' ? '寻找中（尚未找回）' : '招领中（等待失主认领）';
+      statusText.innerText = item.type === 'lost' ? '寻找中' : '招领中';
       statusText.className = 'font-bold text-emerald-600';
     }
 
@@ -487,7 +516,7 @@ const App = {
     this.removeUploadedImage();
     this.onFormTypeChange('lost');
     document.getElementById('formDate').value = Utils.formatLocalDate();
-    document.getElementById('formDate').max = Utils.formatLocalDate();
+    this.updateDateInputBounds(document.getElementById('formDate'));
     this.editingItemId = editingItemId;
     const editingItem = editingItemId ? DataManager.getItemById(editingItemId) : null;
     if (editingItemId && (!editingItem || !editingItem.isMine)) {
@@ -537,7 +566,7 @@ const App = {
     if (submitLabel) submitLabel.innerText = '确认发布';
     const today = Utils.formatLocalDate();
     document.getElementById('formDate').value = today;
-    document.getElementById('formDate').max = today;
+    this.updateDateInputBounds(document.getElementById('formDate'));
     this.onFormTypeChange('lost');
     if (returnToMyPosts) this.openMyPostsModal();
   },
@@ -680,8 +709,17 @@ const App = {
     const validation = Utils.validateItem(itemPayload);
     const errorNotice = document.getElementById('formErrorNotice');
 
-    if (!validation.isValid) {
-      errorNotice.innerHTML = `<strong>提交失败：</strong><ul class="list-disc pl-4 mt-1">${validation.errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
+    // 业务时效校验：遗失/拾获日期需在近 90 天内（一学期内）
+    const minDateObj = new Date();
+    minDateObj.setDate(minDateObj.getDate() - 90);
+    const minAllowedDate = Utils.formatLocalDate(minDateObj);
+    const errors = [...(validation.isValid ? [] : validation.errors)];
+    if (date && date < minAllowedDate) {
+      errors.push('遗失或拾获日期超出有效范围（仅支持近 90 天内的校园失物招领信息，请核对日期）');
+    }
+
+    if (errors.length > 0) {
+      errorNotice.innerHTML = `<strong>提交失败：</strong><ul class="list-disc pl-4 mt-1">${errors.map(err => `<li>${err}</li>`).join('')}</ul>`;
       errorNotice.classList.remove('hidden');
       return;
     }
@@ -702,7 +740,7 @@ const App = {
         this.showToast('修改成功，信息已更新', 'success');
       } else {
         itemPayload.img = this.uploadedImageBase64 || '';
-        itemPayload.publisherName = '我发布的';
+        itemPayload.publisherName = '校内同学（我）';
         updatedItem = DataManager.addItem(itemPayload);
         if (!updatedItem) {
           this.showToast('发布失败，浏览器存储空间可能不足，请减少图片大小后重试', 'error');
@@ -766,7 +804,9 @@ const App = {
 
   renderMyPosts() {
     const all = DataManager.getItems();
-    const myItems = all.filter(it => it.isMine);
+    const myItems = all
+      .filter(it => it.isMine)
+      .sort((a, b) => (a.status === 'solved' ? 1 : 0) - (b.status === 'solved' ? 1 : 0));
 
     document.getElementById('myTotalCount').innerText = myItems.length;
     document.getElementById('myOpenCount').innerText = myItems.filter(it => it.status === 'open').length;
@@ -833,13 +873,13 @@ const App = {
   },
 
   handleResetData() {
-    if (confirm('确定要将数据重置为初始的福州大学精选校园测试数据吗？已发布的数据将被清空重置。')) {
+    if (confirm('确定要恢复为初始的福州大学校园精选示范数据吗？已发布的数据将被清空重置。')) {
       if (!DataManager.resetToDefault()) {
         this.showToast('重置失败，浏览器无法保存数据，原记录未更改', 'error');
         return;
       }
       this.refresh();
-      this.showToast('✅ 已恢复为初始预设测试数据！', 'success');
+      this.showToast('✅ 已恢复为初始预设数据！', 'success');
       this.toggleTestingDropdown();
     }
   },

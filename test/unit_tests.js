@@ -780,6 +780,93 @@ const UnitTests = [
       assert.strictEqual(searchRes[0].id, 1, '标题命中高权重的物品应排在第 1 位');
       assert.strictEqual(searchRes[1].id, 2, '仅描述命中的物品应排在第 2 位');
     }
+  },
+
+  {
+    name: '测试用例 48: 状态自动优先级分层排序（进行中帖子优先置前，已解决帖子自动后移）',
+    category: '状态分层排序测试 (filterItems)',
+    description: '验证列表中存在交错穿插的已解决（solved）和进行中（open）帖子时，进行中帖子自动置顶排在最前，已解决帖子自动沉底后移。',
+    testFn(assert) {
+      const mockList = [
+        { id: 1, title: '卡片A', status: 'open', location: '食堂', category: '校园卡/证件', type: 'found' },
+        { id: 2, title: '雨伞B', status: 'solved', location: '教室', category: '其他物品', type: 'found' },
+        { id: 3, title: '钥匙C', status: 'open', location: '操场', category: '生活钥匙', type: 'lost' },
+        { id: 4, title: '耳机D', status: 'solved', location: '图书馆', category: '数码电子', type: 'lost' },
+        { id: 5, title: '课本E', status: 'open', location: '教学楼', category: '书籍文具', type: 'found' }
+      ];
+
+      // 默认状态（status: 'all'，无关键词）
+      const sorted = Utils.filterItems(mockList, {});
+      assert.strictEqual(sorted.length, 5);
+      
+      // 前 3 项必须全部为进行中（open），保持原有录入时间顺序
+      assert.strictEqual(sorted[0].id, 1, '第1个应为进行中的卡片A');
+      assert.strictEqual(sorted[1].id, 3, '第2个应为进行中的钥匙C');
+      assert.strictEqual(sorted[2].id, 5, '第3个应为进行中的课本E');
+      assert.strictEqual(sorted[0].status, 'open');
+      assert.strictEqual(sorted[1].status, 'open');
+      assert.strictEqual(sorted[2].status, 'open');
+
+      // 后 2 项必须自动沉底排列为已解决（solved）
+      assert.strictEqual(sorted[3].id, 2, '第4个应为已解决的雨伞B');
+      assert.strictEqual(sorted[4].id, 4, '第5个应为已解决的耳机D');
+      assert.strictEqual(sorted[3].status, 'solved');
+      assert.strictEqual(sorted[4].status, 'solved');
+    }
+  },
+
+  {
+    name: '测试用例 49: 微信联系方式包含空格（如 a b c）或非法格式严格拦截',
+    category: '联系方式边界测试 (validateItem)',
+    description: '针对微信号包含空格（如 a b c）、非法字符或长度不合规等情况进行严格校验拦截，确保联系有效性。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      // 包含空格或非法字符的测试样本
+      const invalidWeChatList = [
+        'a b c',
+        'wx test',
+        'wx_ 123',
+        '12345',      // 非纯手机号且少于6位且非字母开头
+        'abc',        // 少于6位
+        'wx@fzu',     // 包含@特殊字符
+        '微信号张三',  // 包含中文字符
+        '1385901234'  // 10位非标准手机号
+      ];
+
+      invalidWeChatList.forEach(contactVal => {
+        const item = { ...initialMockData[0], contactType: '微信', contactVal };
+        const result = Utils.validateItem(item, today);
+        assert.isFalse(result.isValid, `微信号 "${contactVal}" 应被拦截无法通过`);
+        assert.isTrue(
+          result.errors.some(e => e.includes('微信号不能包含空格') || e.includes('微信号格式不正确')),
+          `微信号 "${contactVal}" 应给出具体的格式或空格错误提示`
+        );
+      });
+    }
+  },
+
+  {
+    name: '测试用例 50: 微信联系方式合规格式校验通过（标准字母开头或绑定手机号）',
+    category: '联系方式格式测试 (validateItem)',
+    description: '验证符合微信官方标准的微信号（6~20位字母开头）及11位中国大陆手机号均能顺利通过校验。',
+    testFn(assert) {
+      const today = new Date(2026, 9, 7, 12);
+      const validWeChatList = [
+        'fzu_helper_2026',
+        'key-master-fzu',
+        'wx_123456',
+        'WeChatOfficial',
+        'a1234567',
+        '13859012345',
+        '15980001122'
+      ];
+
+      validWeChatList.forEach(contactVal => {
+        const item = { ...initialMockData[0], contactType: '微信', contactVal };
+        const result = Utils.validateItem(item, today);
+        assert.isTrue(result.isValid, `合规微信号 "${contactVal}" 应当通过校验`);
+      });
+    }
   }
 ];
 

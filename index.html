@@ -11,6 +11,7 @@
     }
   </script>
   <title>福州大学失物信息共享平台</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <!-- 引入现代 UI 样式支持 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -250,13 +251,13 @@
             <label class="relative flex items-center justify-center p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50/40">
               <input type="radio" name="formType" value="lost" checked class="peer sr-only" onchange="App.onFormTypeChange('lost')">
               <span class="flex items-center gap-2 font-bold text-slate-600 peer-checked:text-rose-600">
-                <i class="fa-solid fa-circle-question text-base"></i> 我丢失了 (寻物启事)
+                <i class="fa-solid fa-circle-question text-base"></i> 我丢失了 (寻物)
               </span>
             </label>
             <label class="relative flex items-center justify-center p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/40">
               <input type="radio" name="formType" value="found" class="peer sr-only" onchange="App.onFormTypeChange('found')">
               <span class="flex items-center gap-2 font-bold text-slate-600 peer-checked:text-emerald-700">
-                <i class="fa-solid fa-bullhorn text-base"></i> 我拾获了 (失物招领)
+                <i class="fa-solid fa-bullhorn text-base"></i> 我拾获了 (招领)
               </span>
             </label>
           </div>
@@ -282,7 +283,7 @@
           </div>
           <div>
             <label id="formDateLabel" class="block font-semibold text-slate-700 mb-1">遗失日期 <span class="text-rose-500">*</span></label>
-            <input type="date" id="formDate" required min="0001-01-01" onfocus="this.max = Utils.formatLocalDate()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-xs text-slate-800">
+            <input type="date" id="formDate" required onfocus="App.updateDateInputBounds(this)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-xs text-slate-800">
           </div>
         </div>
 
@@ -315,7 +316,7 @@
             </div>
             <div class="text-[11px] text-slate-400 space-y-0.5">
               <p>支持 PNG、JPG、WEBP 格式图片（不超过 2MB）</p>
-              <p>实物照片为选填项，未上传时将展示默认占位图</p>
+              <p>上传实物或现场照片有助于更快物归原主</p>
             </div>
           </div>
         </div>
@@ -360,7 +361,6 @@
             <i class="fa-solid fa-camera-retro text-xl"></i>
           </div>
           <span class="text-sm font-semibold text-slate-600">暂无实物图片</span>
-          <span class="text-xs text-slate-400 mt-0.5">发布者未上传现场或实物照片</span>
         </div>
         <button onclick="App.closeDetailModal()" class="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm transition">
           <i class="fa-solid fa-xmark"></i>
@@ -392,11 +392,11 @@
         <!-- 关键属性列表 -->
         <div class="bg-slate-50 rounded-2xl p-4 space-y-2 border border-slate-100">
           <div class="flex items-center text-slate-600">
-            <span class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-rose-500"></i> 发生地点：</span>
+            <span id="detailLocationLabel" class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-rose-500"></i> 地点：</span>
             <span id="detailLocation" class="font-medium text-slate-800 flex-1">旗山校区图书馆</span>
           </div>
           <div class="flex items-center text-slate-600">
-            <span class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-regular fa-calendar text-blue-500"></i> 发生时间：</span>
+            <span id="detailDateLabel" class="w-24 text-slate-400 flex items-center gap-1.5"><i class="fa-regular fa-calendar text-blue-500"></i> 日期：</span>
             <span id="detailDate" class="font-medium text-slate-800 flex-1">2026-10-02</span>
           </div>
           <div class="flex items-center text-slate-600">
