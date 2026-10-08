@@ -140,30 +140,34 @@ const DataManager = {
         if (parsed.length > 0) {
           // 自动修正预设物品中的旧图片链接为对应的高清本地图片
           let hasUpgrade = false;
+          const PRESET_IDS = [1001, 1002, 1003, 1004, 1005, 1006];
           parsed.forEach(it => {
-            if (it.id === 1001 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1001_card.jpg';
-              hasUpgrade = true;
-            } else if (it.id === 1002 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1002_airpods.jpg';
-              hasUpgrade = true;
-            } else if (it.id === 1003 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1003_umbrella.jpg';
-              it.category = '其他物品';
-              hasUpgrade = true;
-            } else if (it.id === 1004 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1004_keys.jpg';
-              hasUpgrade = true;
-            } else if (it.id === 1005 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1005_book.jpg';
-              hasUpgrade = true;
-            } else if (it.id === 1006 && it.img && it.img.includes('unsplash.com')) {
-              it.img = 'assets/images/item_1006_bottle.jpg';
-              hasUpgrade = true;
+            // 系统预设物品（1001~1006）在未被主动编辑修改时保持官方高清实物图
+            if (!it.updatedAt) {
+              if (it.id === 1001 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1001_card.jpg';
+                hasUpgrade = true;
+              } else if (it.id === 1002 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1002_airpods.jpg';
+                hasUpgrade = true;
+              } else if (it.id === 1003 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1003_umbrella.jpg';
+                it.category = '其他物品';
+                hasUpgrade = true;
+              } else if (it.id === 1004 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1004_keys.jpg';
+                hasUpgrade = true;
+              } else if (it.id === 1005 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1005_book.jpg';
+                hasUpgrade = true;
+              } else if (it.id === 1006 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1006_bottle.jpg';
+                hasUpgrade = true;
+              }
             }
 
-            // 自动修正旧版本中用户自发物品因 bug 误赋予的预设示例图片
-            if (it.isMine && typeof it.img === 'string' && it.img.startsWith('assets/images/')) {
+            // 仅对用户自建的物品（ID 不在 1001~1006 预设范围内）：修正因旧版本 bug 误赋予的预设示例图片
+            if (!PRESET_IDS.includes(it.id) && typeof it.img === 'string' && it.img.startsWith('assets/images/')) {
               it.img = '';
               hasUpgrade = true;
             }

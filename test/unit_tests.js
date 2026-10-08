@@ -718,6 +718,26 @@ const UnitTests = [
           contactVal: 'wx_preset',
           img: 'assets/images/item_1002_airpods.jpg',
           isMine: false
+        },
+        {
+          id: 1001,
+          type: 'found',
+          title: '一区食堂二楼水吧捡到一张学生卡',
+          category: '校园卡/证件',
+          location: '旗山校区一区食堂二楼水吧附近餐桌',
+          date: '2026-10-02',
+          img: '',
+          isMine: true
+        },
+        {
+          id: 1004,
+          type: 'lost',
+          title: '风雨操场草坪遗落一串宿舍钥匙',
+          category: '生活钥匙',
+          location: '风雨操场司令台正前方草坪',
+          date: '2026-09-30',
+          img: '',
+          isMine: true
         }
       ];
       const storageKey = typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'CAMPUS_LOST_FOUND_ITEMS_V3';
@@ -726,10 +746,14 @@ const UnitTests = [
       const repaired = DataManager.getItems();
       const repairedUserItem = repaired.find(it => it.id === 2001);
       const presetItem = repaired.find(it => it.id === 1002);
+      const presetCard = repaired.find(it => it.id === 1001);
+      const presetKeys = repaired.find(it => it.id === 1004);
 
       assert.isTrue(Boolean(repairedUserItem), '应存在历史用户发布项');
       assert.strictEqual(repairedUserItem.img, '', '用户发布的历史记录中的示例图片应被自动清洗为空');
       assert.strictEqual(presetItem.img, 'assets/images/item_1002_airpods.jpg', '系统预设记录的图片不受影响');
+      assert.strictEqual(presetCard.img, 'assets/images/item_1001_card.jpg', '系统预设学生卡图片应自动恢复完整');
+      assert.strictEqual(presetKeys.img, 'assets/images/item_1004_keys.jpg', '系统预设钥匙图片应自动恢复完整');
     }
   }
 ];
