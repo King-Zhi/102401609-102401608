@@ -247,16 +247,21 @@ const App = {
     const tabFound = document.getElementById('tabTypeFound');
 
     [tabAll, tabLost, tabFound].forEach(btn => {
+      if (!btn) return;
       btn.className = 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1 font-medium';
     });
 
     if (type === 'all') {
-      tabAll.className = 'px-3.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold transition';
+      if (tabAll) tabAll.className = 'px-3.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold transition';
     } else if (type === 'lost') {
-      tabLost.className = 'px-3.5 py-1.5 rounded-lg bg-white text-rose-600 shadow-sm font-semibold transition flex items-center gap-1';
+      if (tabLost) tabLost.className = 'px-3.5 py-1.5 rounded-lg bg-white text-rose-600 shadow-sm font-semibold transition flex items-center gap-1';
     } else if (type === 'found') {
-      tabFound.className = 'px-3.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold transition flex items-center gap-1';
+      if (tabFound) tabFound.className = 'px-3.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold transition flex items-center gap-1';
     }
+
+    if (tabAll) tabAll.classList.toggle('selected', type === 'all');
+    if (tabLost) tabLost.classList.toggle('selected', type === 'lost');
+    if (tabFound) tabFound.classList.toggle('selected', type === 'found');
 
     this.refresh();
   },
@@ -779,6 +784,34 @@ const App = {
       }
 
       this.closePublishModal();
+
+      // 发布成功后清空搜索框关键字，避免被遗留搜索词过滤掉刚发布的信息
+      this.filters.keyword = '';
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) searchInput.value = '';
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+
+      // 若当前过滤校区与新发布校区冲突且当前不是全部校区，则智能切到发布校区
+      if (this.filters.campus && this.filters.campus !== 'all' && this.filters.campus !== updatedItem.campus) {
+        this.filters.campus = updatedItem.campus;
+        const campusSelect = document.getElementById('selectCampus');
+        if (campusSelect) campusSelect.value = updatedItem.campus;
+      }
+
+      // 若当前分类过滤与新发布分类冲突，重置分类以确保新物品展示
+      if (this.filters.category && this.filters.category !== 'all' && this.filters.category !== updatedItem.category) {
+        this.filters.category = 'all';
+        const categorySelect = document.getElementById('selectCategory');
+        if (categorySelect) categorySelect.value = 'all';
+      }
+
+      // 若当前状态过滤为已解决，重置为全部状态
+      if (this.filters.status === 'solved') {
+        this.filters.status = 'all';
+        const statusSelect = document.getElementById('selectStatus');
+        if (statusSelect) statusSelect.value = 'all';
+      }
 
       // 保持全部视图或切至对应类型视图并刷新
       if (this.filters.type === 'all' || !this.filters.type) {

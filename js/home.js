@@ -69,12 +69,12 @@
   function render() {
     const allItems = DataManager.getItems();
     const filtered = Utils.filterItems(allItems, app.filters);
-    if (!app.filters.keyword.trim()) {
+    const kw = (app.filters.keyword || '').trim();
+    if (!kw) {
       filtered.sort((a, b) => Number(a.status === 'solved') - Number(b.status === 'solved') || itemTime(b) - itemTime(a));
     }
-    const isDefaultView = !app.filters.keyword.trim() &&
-      app.filters.category === 'all' && app.filters.location === 'all' && app.filters.status === 'all';
-    const latest = isDefaultView ? filtered.filter(item => item.status !== 'solved').slice(0, 3) : [];
+    const isSearching = Boolean(kw);
+    const latest = !isSearching ? filtered.filter(item => item.status !== 'solved').slice(0, 3) : [];
 
     const latestHeading = latestSection.querySelector('h2');
     if (latestHeading) {
