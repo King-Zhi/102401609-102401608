@@ -106,8 +106,6 @@ campus-lost-found/
 
 ![日间首页](assets/web_preview_day.png)
 
-测试页保留在 `test/test_runner.html`，可以直接打开，首页不再显示开发测试菜单。
-
 ---
 
 ## 🧪 自动化单元测试说明
