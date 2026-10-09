@@ -64,7 +64,27 @@
     <!-- 检索与主筛选区 -->
     <section class="dark-intro">
       <div>
-        <span class="dark-eyebrow"><i class="fa-solid fa-location-dot"></i> 福州大学 · 旗山校区</span>
+        <div class="dark-eyebrow flex items-center gap-1.5 flex-wrap">
+          <span class="inline-flex items-center gap-1"><i class="fa-solid fa-location-dot"></i> 福州大学 ·</span>
+          <div class="dark-campus-switcher relative inline-flex items-center">
+            <select
+              id="selectCampus"
+              onchange="App.onCampusChange(this.value)"
+              class="dark-campus-select"
+              title="点击切换当前浏览校区"
+            >
+              <option value="all">全部校区</option>
+              <option value="旗山校区">旗山校区</option>
+              <option value="铜盘校区">铜盘校区</option>
+              <option value="怡山校区">怡山校区</option>
+              <option value="泉港校区">泉港校区</option>
+              <option value="晋江校区">晋江校区</option>
+              <option value="厦门集美校区">厦门集美校区</option>
+              <option value="厦门鼓浪屿校区">厦门鼓浪屿校区</option>
+            </select>
+            <i class="fa-solid fa-chevron-down dark-campus-arrow"></i>
+          </div>
+        </div>
         <h2>校园失物招领</h2>
         <p>发布遗失信息，或看看最近有哪些物品正在等待认领。</p>
       </div>
@@ -137,21 +157,6 @@
               <option value="书籍文具">书籍文具</option>
               <option value="生活钥匙">生活钥匙</option>
               <option value="其他物品">其他物品</option>
-            </select>
-          </div>
-
-          <!-- 校区筛选 -->
-          <div class="dark-select-wrap flex items-center gap-1">
-            <span class="text-slate-400">校区:</span>
-            <select id="selectCampus" onchange="App.onCampusChange(this.value)" class="dark-select">
-              <option value="all">全部校区</option>
-              <option value="旗山校区">旗山校区</option>
-              <option value="铜盘校区">铜盘校区</option>
-              <option value="怡山校区">怡山校区</option>
-              <option value="泉港校区">泉港校区</option>
-              <option value="晋江校区">晋江校区</option>
-              <option value="厦门集美校区">厦门集美校区</option>
-              <option value="厦门鼓浪屿校区">厦门鼓浪屿校区</option>
             </select>
           </div>
 

@@ -544,7 +544,8 @@ const App = {
     document.getElementById('formErrorNotice').classList.add('hidden');
 
     const campusSelect = document.getElementById('formCampus');
-    if (campusSelect) campusSelect.value = '旗山校区';
+    const defaultCampus = (this.filters.campus && this.filters.campus !== 'all') ? this.filters.campus : '旗山校区';
+    if (campusSelect) campusSelect.value = defaultCampus;
 
     const title = document.getElementById('publishModalTitle');
     if (title) title.innerText = editingItem ? '编辑失物 / 招领信息' : '发布失物 / 招领信息';
@@ -578,7 +579,8 @@ const App = {
     document.getElementById('publishModal').classList.add('hidden');
     document.getElementById('publishForm').reset();
     const campusSelect = document.getElementById('formCampus');
-    if (campusSelect) campusSelect.value = '旗山校区';
+    const defaultCampus = (this.filters.campus && this.filters.campus !== 'all') ? this.filters.campus : '旗山校区';
+    if (campusSelect) campusSelect.value = defaultCampus;
     this.removeUploadedImage();
     this.editingItemId = null;
     this.isSubmitting = false;
