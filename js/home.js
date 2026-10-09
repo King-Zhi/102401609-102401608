@@ -90,13 +90,38 @@
     latestGrid.dataset.count = String(latest.length);
     latestGrid.innerHTML = latest.map(featureMarkup).join('');
 
-    const listItems = filtered;
-    itemsGrid.innerHTML = listItems.map(item => app.createCardHtml(item)).join('');
-    itemsGrid.classList.toggle('is-empty', listItems.length === 0);
-    emptyState.classList.toggle('hidden', listItems.length > 0);
+    // 计算分页切片并渲染卡片网格
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / app.pageSize));
+    if (app.currentPage > totalPages) {
+      app.currentPage = totalPages;
+    }
+    if (app.currentPage < 1) {
+      app.currentPage = 1;
+    }
+    const startIndex = (app.currentPage - 1) * app.pageSize;
+    const pagedItems = filtered.slice(startIndex, startIndex + app.pageSize);
+
+    itemsGrid.innerHTML = pagedItems.map(item => app.createCardHtml(item)).join('');
+    itemsGrid.classList.toggle('is-empty', pagedItems.length === 0);
+    emptyState.classList.toggle('hidden', totalItems > 0);
+
+    const countNotice = document.getElementById('resultCountNotice');
+    if (countNotice) {
+      if (totalItems === 0) {
+        countNotice.innerHTML = `正在展示共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">0</span> 条相关失物招领`;
+      } else if (totalItems <= app.pageSize) {
+        countNotice.innerHTML = `正在展示共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">${totalItems}</span> 条相关失物招领`;
+      } else {
+        const endIndex = Math.min(startIndex + app.pageSize, totalItems);
+        countNotice.innerHTML = `正在展示第 <span class="font-bold text-emerald-600">${startIndex + 1}-${endIndex}</span> 条（共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">${totalItems}</span> 条相关失物招领）`;
+      }
+    }
 
     const displayCount = document.getElementById('displayCount');
-    if (displayCount) displayCount.textContent = filtered.length;
+    if (displayCount) displayCount.textContent = totalItems;
+
+    app.renderPagination(totalItems, totalPages);
   }
 
   app.refresh = function refreshDarkHome() {
@@ -106,9 +131,13 @@
 
   app.setTypeFilter = function setDarkTypeFilter(type) {
     this.filters.type = type;
-    document.getElementById('tabTypeAll').classList.toggle('selected', type === 'all');
-    document.getElementById('tabTypeLost').classList.toggle('selected', type === 'lost');
-    document.getElementById('tabTypeFound').classList.toggle('selected', type === 'found');
+    this.currentPage = 1;
+    const tabAll = document.getElementById('tabTypeAll');
+    const tabLost = document.getElementById('tabTypeLost');
+    const tabFound = document.getElementById('tabTypeFound');
+    if (tabAll) tabAll.classList.toggle('selected', type === 'all');
+    if (tabLost) tabLost.classList.toggle('selected', type === 'lost');
+    if (tabFound) tabFound.classList.toggle('selected', type === 'found');
     this.refresh();
   };
 

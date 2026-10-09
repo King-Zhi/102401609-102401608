@@ -972,6 +972,79 @@ const UnitTests = [
         '应提示福州大学预设校区范围错误信息'
       );
     }
+  },
+
+  {
+    name: '测试用例 55: 列表数字分页切片算法验证（每页6条，多页智能切分）',
+    category: '分页算法测试 (Utils.paginate)',
+    description: '验证列表按每页固定6条切片，第1页精准返回前6条，第2页精准返回后续条目，且不修改原数组。',
+    testFn(assert) {
+      const items = Array.from({ length: 15 }, (_, i) => ({ id: i + 1, title: `物品-${i + 1}` }));
+      const page1 = Utils.paginate(items, 1, 6);
+      const page2 = Utils.paginate(items, 2, 6);
+      const page3 = Utils.paginate(items, 3, 6);
+
+      assert.strictEqual(page1.length, 6, '第1页应包含6条物品');
+      assert.strictEqual(page1[0].id, 1, '第1页首项ID应为1');
+      assert.strictEqual(page1[5].id, 6, '第1页末项ID应为6');
+
+      assert.strictEqual(page2.length, 6, '第2页应包含6条物品');
+      assert.strictEqual(page2[0].id, 7, '第2页首项ID应为7');
+      assert.strictEqual(page2[5].id, 12, '第2页末项ID应为12');
+
+      assert.strictEqual(page3.length, 3, '第3页应包含剩余3条物品');
+      assert.strictEqual(page3[0].id, 13, '第3页首项ID应为13');
+      assert.strictEqual(page3[2].id, 15, '第3页末项ID应为15');
+      assert.strictEqual(items.length, 15, '分页函数不应破坏原数据数组');
+    }
+  },
+
+  {
+    name: '测试用例 56: 分页总页数与边界保护逻辑（0条时1页，翻页上下限受控截断）',
+    category: '分页算法测试 (Utils.calculateTotalPages)',
+    description: '验证空数据与不同条数下的总页数计算，以及当请求页码小于1或大于总页数时的边界安全保护。',
+    testFn(assert) {
+      assert.strictEqual(Utils.calculateTotalPages(0, 6), 1, '0条数据应至少为1页');
+      assert.strictEqual(Utils.calculateTotalPages(5, 6), 1, '5条数据（未满一页）应为1页');
+      assert.strictEqual(Utils.calculateTotalPages(6, 6), 1, '刚好满6条应为1页');
+      assert.strictEqual(Utils.calculateTotalPages(7, 6), 2, '7条数据应向上取整为2页');
+      assert.strictEqual(Utils.calculateTotalPages(12, 6), 2, '12条数据应为2页');
+      assert.strictEqual(Utils.calculateTotalPages(13, 6), 3, '13条数据应为3页');
+
+      const items = Array.from({ length: 8 }, (_, i) => ({ id: i + 1 }));
+      // 越界请求第 0 页应自动保护返回第 1 页数据
+      const underPage = Utils.paginate(items, 0, 6);
+      assert.strictEqual(underPage.length, 6, '越下界应安全回退为第1页数据');
+      assert.strictEqual(underPage[0].id, 1, '首项ID应为1');
+
+      // 越界请求第 99 页应自动保护返回最后一页数据
+      const overPage = Utils.paginate(items, 99, 6);
+      assert.strictEqual(overPage.length, 2, '越上界应安全回退为最后一页（第2页）剩余数据');
+      assert.strictEqual(overPage[0].id, 7, '首项ID应为7');
+    }
+  },
+
+  {
+    name: '测试用例 57: 省略号智能页码生成逻辑（<=7页全部平铺，>7页首尾固定加动态窗口省略）',
+    category: '分页算法测试 (Utils.generatePageNumbers)',
+    description: '验证数字分页器导航条的页码按钮序列生成，小页码全量平铺，大页码带省略号及首末页导航。',
+    testFn(assert) {
+      // 5页全展示
+      const pages5 = Utils.generatePageNumbers(3, 5);
+      assert.strictEqual(JSON.stringify(pages5), JSON.stringify([1, 2, 3, 4, 5]), '小于等于7页应全量平铺展示');
+
+      // 10页在第1页：[1, 2, '...', 10]
+      const pages10Start = Utils.generatePageNumbers(1, 10);
+      assert.isTrue(pages10Start.includes(1) && pages10Start.includes(10), '第1页应包含首末页');
+      assert.isTrue(pages10Start.includes('...'), '第1页应包含省略号');
+
+      // 10页在第5页：[1, '...', 4, 5, 6, '...', 10]
+      const pages10Mid = Utils.generatePageNumbers(5, 10);
+      assert.strictEqual(pages10Mid[0], 1, '首项应为第1页');
+      assert.strictEqual(pages10Mid[pages10Mid.length - 1], 10, '末项应为最后一页');
+      assert.isTrue(pages10Mid.includes(4) && pages10Mid.includes(5) && pages10Mid.includes(6), '中间窗口应高亮当前页及相邻页');
+      assert.strictEqual(pages10Mid.filter(p => p === '...').length, 2, '居中时两侧应均有省略号');
+    }
   }
 ];
 

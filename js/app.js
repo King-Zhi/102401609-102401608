@@ -13,6 +13,9 @@ const App = {
     status: 'all'      // all, open, solved
   },
 
+  currentPage: 1,
+  pageSize: 6,
+
   currentDetailItem: null,
   uploadedImageBase64: '',
   editingItemId: null,
@@ -74,20 +77,49 @@ const App = {
     const grid = document.getElementById('itemsGrid');
     const emptyState = document.getElementById('emptyState');
     const displayCount = document.getElementById('displayCount');
+    const countNotice = document.getElementById('resultCountNotice');
 
     // 多条件联合筛选
     const filtered = Utils.filterItems(allItems, this.filters);
+    const totalItems = filtered.length;
 
-    if (displayCount) displayCount.innerText = filtered.length;
+    if (displayCount) displayCount.innerText = totalItems;
 
-    if (filtered.length === 0) {
-      grid.innerHTML = '';
-      emptyState.classList.remove('hidden');
+    if (totalItems === 0) {
+      if (grid) grid.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      if (countNotice) {
+        countNotice.innerHTML = `正在展示共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">0</span> 条相关失物招领`;
+      }
+      this.renderPagination(0, 1);
       return;
     }
 
-    emptyState.classList.add('hidden');
-    grid.innerHTML = filtered.map(item => this.createCardHtml(item)).join('');
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / this.pageSize));
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const pagedItems = filtered.slice(startIndex, startIndex + this.pageSize);
+
+    if (countNotice) {
+      if (totalItems <= this.pageSize) {
+        countNotice.innerHTML = `正在展示共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">${totalItems}</span> 条相关失物招领`;
+      } else {
+        const endIndex = Math.min(startIndex + this.pageSize, totalItems);
+        countNotice.innerHTML = `正在展示第 <span class="font-bold text-emerald-600">${startIndex + 1}-${endIndex}</span> 条（共 <span id="displayCount" class="font-bold text-emerald-600 text-sm">${totalItems}</span> 条相关失物招领）`;
+      }
+    }
+
+    if (grid) {
+      grid.innerHTML = pagedItems.map(item => this.createCardHtml(item)).join('');
+    }
+    this.renderPagination(totalItems, totalPages);
   },
 
   /**
@@ -207,6 +239,7 @@ const App = {
    */
   onSearchInput(val) {
     this.filters.keyword = val;
+    this.currentPage = 1;
     const clearBtn = document.getElementById('clearSearchBtn');
     if (clearBtn) {
       if (val.trim()) {
@@ -224,6 +257,7 @@ const App = {
   clearSearch() {
     const input = document.getElementById('searchInput');
     if (input) input.value = '';
+    this.currentPage = 1;
     this.onSearchInput('');
   },
 
@@ -233,6 +267,7 @@ const App = {
   quickSearch(word) {
     const input = document.getElementById('searchInput');
     if (input) input.value = word;
+    this.currentPage = 1;
     this.onSearchInput(word);
     input.focus();
   },
@@ -242,6 +277,7 @@ const App = {
    */
   setTypeFilter(type) {
     this.filters.type = type;
+    this.currentPage = 1;
     const tabAll = document.getElementById('tabTypeAll');
     const tabLost = document.getElementById('tabTypeLost');
     const tabFound = document.getElementById('tabTypeFound');
@@ -268,21 +304,25 @@ const App = {
 
   onCategoryChange(cat) {
     this.filters.category = cat;
+    this.currentPage = 1;
     this.refresh();
   },
 
   onCampusChange(camp) {
     this.filters.campus = camp;
+    this.currentPage = 1;
     this.refresh();
   },
 
   onLocationChange(loc) {
     this.filters.location = loc;
+    this.currentPage = 1;
     this.refresh();
   },
 
   onStatusChange(st) {
     this.filters.status = st;
+    this.currentPage = 1;
     this.refresh();
   },
 
@@ -290,6 +330,7 @@ const App = {
    * 重置全部筛选条件
    */
   resetFilters() {
+    this.currentPage = 1;
     this.filters = {
       keyword: '',
       type: 'all',
@@ -317,6 +358,72 @@ const App = {
 
     this.setTypeFilter('all');
     this.showToast('已重置全部搜索与筛选条件', 'info');
+  },
+
+  /**
+   * 跳转至指定页码
+   */
+  goToPage(page) {
+    const allItems = DataManager.getItems();
+    const filtered = Utils.filterItems(allItems, this.filters);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / this.pageSize));
+    const target = Math.max(1, Math.min(page, totalPages));
+    if (this.currentPage !== target) {
+      this.currentPage = target;
+      this.refresh();
+      const recordsSection = document.getElementById('recordsSection');
+      if (recordsSection) {
+        recordsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  },
+
+  /**
+   * 上一页
+   */
+  prevPage() {
+    this.goToPage(this.currentPage - 1);
+  },
+
+  /**
+   * 下一页
+   */
+  nextPage() {
+    this.goToPage(this.currentPage + 1);
+  },
+
+  /**
+   * 渲染数字分页条
+   */
+  renderPagination(totalItems, totalPages) {
+    const bar = document.getElementById('paginationBar');
+    if (!bar) return;
+    if (totalItems <= this.pageSize) {
+      bar.innerHTML = '';
+      bar.classList.add('hidden');
+      return;
+    }
+
+    bar.classList.remove('hidden');
+    const cur = this.currentPage;
+    const pages = (typeof Utils !== 'undefined' && Utils.generatePageNumbers)
+      ? Utils.generatePageNumbers(cur, totalPages)
+      : [1];
+
+    const prevBtn = `<button type="button" class="dark-pagination-btn" onclick="App.prevPage()" ${cur === 1 ? 'disabled aria-disabled="true"' : ''} title="上一页"><i class="fa-solid fa-chevron-left"></i> 上一页</button>`;
+    const nextBtn = `<button type="button" class="dark-pagination-btn" onclick="App.nextPage()" ${cur === totalPages ? 'disabled aria-disabled="true"' : ''} title="下一页">下一页 <i class="fa-solid fa-chevron-right"></i></button>`;
+
+    const pageBtns = pages.map(p => {
+      if (p === '...') {
+        return `<span class="dark-pagination-ellipsis" aria-hidden="true">…</span>`;
+      }
+      const isActive = p === cur;
+      return `<button type="button" class="dark-pagination-btn ${isActive ? 'active' : ''}" onclick="App.goToPage(${p})" ${isActive ? 'aria-current="page"' : ''} title="第 ${p} 页">${p}</button>`;
+    }).join('');
+
+    const infoText = `<span class="dark-pagination-info">第 ${cur} / ${totalPages} 页</span>`;
+
+    bar.innerHTML = `${prevBtn}${pageBtns}${nextBtn}${infoText}`;
   },
 
   /**

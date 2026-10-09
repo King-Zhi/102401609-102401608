@@ -544,6 +544,50 @@ const Utils = {
     } catch (e) {
       return { success: false, message: 'JSON 解析失败：' + e.message };
     }
+  },
+
+  /**
+   * 物品列表数字分页切片（默认每页6条）
+   */
+  paginate(items, page = 1, pageSize = 6) {
+    if (!Array.isArray(items)) return [];
+    const size = Math.max(1, pageSize);
+    const totalPages = Math.max(1, Math.ceil(items.length / size));
+    const validPage = Math.max(1, Math.min(page, totalPages));
+    const startIndex = (validPage - 1) * size;
+    return items.slice(startIndex, startIndex + size);
+  },
+
+  /**
+   * 计算分页总页数
+   */
+  calculateTotalPages(totalItems, pageSize = 6) {
+    if (!Number.isFinite(totalItems) || totalItems <= 0) return 1;
+    const size = Math.max(1, pageSize);
+    return Math.max(1, Math.ceil(totalItems / size));
+  },
+
+  /**
+   * 生成数字分页器页码序列（带智能省略号算法）
+   */
+  generatePageNumbers(currentPage, totalPages) {
+    const total = Math.max(1, totalPages);
+    const cur = Math.max(1, Math.min(currentPage, total));
+    const pages = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (cur > 3) pages.push('...');
+      const start = Math.max(2, cur - 1);
+      const end = Math.min(total - 1, cur + 1);
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+      if (cur < total - 2) pages.push('...');
+      if (!pages.includes(total)) pages.push(total);
+    }
+    return pages;
   }
 };
 
