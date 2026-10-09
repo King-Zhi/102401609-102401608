@@ -8,6 +8,7 @@ const App = {
     keyword: '',
     type: 'all',       // all, lost, found
     category: 'all',   // 全部分类
+    campus: 'all',     // 全部校区
     location: 'all',   // 全部大区
     status: 'all'      // all, open, solved
   },
@@ -165,17 +166,18 @@ const App = {
             </div>
           </div>
 
-          <!-- 标题与地点 -->
-          <div>
-            <h3 class="font-bold text-sm text-slate-800 line-clamp-1 hover:text-emerald-700 transition" title="${Utils.escapeHtml(item.title)}">
-              ${highlightedTitle}
-            </h3>
-            <div class="text-xs text-slate-500 mt-1.5 flex items-center gap-1 line-clamp-1">
-              <i class="fa-solid fa-location-dot text-rose-500 text-[11px] shrink-0"></i>
-              <span class="truncate">${highlightedLocation}</span>
+            <!-- 标题与地点 -->
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 line-clamp-1 hover:text-emerald-700 transition" title="${Utils.escapeHtml(item.title)}">
+                ${highlightedTitle}
+              </h3>
+              <div class="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5 line-clamp-1">
+                <i class="fa-solid fa-location-dot text-rose-500 text-[11px] shrink-0"></i>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/60 shrink-0">${Utils.escapeHtml((item.campus || Utils.detectCampus(item)).replace('校区', ''))}</span>
+                <span class="truncate">${highlightedLocation}</span>
+              </div>
+              ${snippetHtml}
             </div>
-            ${snippetHtml}
-          </div>
         </div>
 
         <!-- 卡片底部信息 -->
@@ -264,6 +266,11 @@ const App = {
     this.refresh();
   },
 
+  onCampusChange(camp) {
+    this.filters.campus = camp;
+    this.refresh();
+  },
+
   onLocationChange(loc) {
     this.filters.location = loc;
     this.refresh();
@@ -282,6 +289,7 @@ const App = {
       keyword: '',
       type: 'all',
       category: 'all',
+      campus: 'all',
       location: 'all',
       status: 'all'
     };
@@ -292,6 +300,9 @@ const App = {
 
     const selectCat = document.getElementById('selectCategory');
     if (selectCat) selectCat.value = 'all';
+
+    const selectCampus = document.getElementById('selectCampus');
+    if (selectCampus) selectCampus.value = 'all';
 
     const selectLoc = document.getElementById('selectLocation');
     if (selectLoc) selectLoc.value = 'all';
@@ -337,7 +348,11 @@ const App = {
     }
 
     document.getElementById('detailCategoryBadge').innerText = item.category;
-    document.getElementById('detailLocation').innerText = item.location;
+    const itemCampus = item.campus || (typeof Utils !== 'undefined' && Utils.detectCampus ? Utils.detectCampus(item) : '旗山校区');
+    const detailLoc = document.getElementById('detailLocation');
+    if (detailLoc) {
+      detailLoc.innerHTML = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 mr-1.5">${Utils.escapeHtml(itemCampus)}</span><span>${Utils.escapeHtml(item.location)}</span>`;
+    }
     document.getElementById('detailDate').innerText = item.date;
 
     const locLabel = document.getElementById('detailLocationLabel');
@@ -528,6 +543,9 @@ const App = {
     document.getElementById('publishModal').classList.remove('hidden');
     document.getElementById('formErrorNotice').classList.add('hidden');
 
+    const campusSelect = document.getElementById('formCampus');
+    if (campusSelect) campusSelect.value = '旗山校区';
+
     const title = document.getElementById('publishModalTitle');
     if (title) title.innerText = editingItem ? '编辑失物 / 招领信息' : '发布失物 / 招领信息';
     this.updatePublishButton();
@@ -537,6 +555,9 @@ const App = {
       if (typeRadio) typeRadio.checked = true;
       document.getElementById('formTitle').value = editingItem.title || '';
       document.getElementById('formCategory').value = editingItem.category || '其他物品';
+      if (campusSelect) {
+        campusSelect.value = editingItem.campus || (typeof Utils !== 'undefined' && Utils.detectCampus ? Utils.detectCampus(editingItem) : '旗山校区');
+      }
       document.getElementById('formDate').value = editingItem.date || '';
       document.getElementById('formLocation').value = editingItem.location || '';
       document.getElementById('formDesc').value = editingItem.desc || '';
@@ -556,6 +577,8 @@ const App = {
     this.returnToMyPosts = false;
     document.getElementById('publishModal').classList.add('hidden');
     document.getElementById('publishForm').reset();
+    const campusSelect = document.getElementById('formCampus');
+    if (campusSelect) campusSelect.value = '旗山校区';
     this.removeUploadedImage();
     this.editingItemId = null;
     this.isSubmitting = false;
@@ -687,7 +710,10 @@ const App = {
 
     const title = document.getElementById('formTitle').value;
     const category = document.getElementById('formCategory').value;
-    const location = document.getElementById('formLocation').value;
+    const campusSelect = document.getElementById('formCampus');
+    const campus = (campusSelect && campusSelect.value) ? campusSelect.value : '旗山校区';
+    const inputLocation = (document.getElementById('formLocation').value || '').trim();
+    const fullLocation = inputLocation.includes(campus) ? inputLocation : `${campus} ${inputLocation}`;
     const date = document.getElementById('formDate').value;
     const desc = document.getElementById('formDesc').value;
     const contactType = document.getElementById('formContactType').value;
@@ -697,7 +723,8 @@ const App = {
       type,
       title,
       category,
-      location,
+      campus,
+      location: fullLocation,
       date,
       desc,
       contactType,

@@ -12,6 +12,7 @@ const initialMockData = [
     type: 'found', // found: 失物招领(捡到), lost: 寻物启事(丢失)
     title: '一区食堂二楼水吧捡到一张学生卡',
     category: '校园卡/证件',
+    campus: '旗山校区',
     location: '旗山校区一区食堂二楼水吧附近餐桌',
     date: '2026-10-02',
     timestamp: Date.now() - 1000 * 60 * 25, // 25分钟前
@@ -28,6 +29,7 @@ const initialMockData = [
     type: 'lost',
     title: '急寻！图书馆三楼西区遗落白色AirPods Pro耳机',
     category: '数码电子',
+    campus: '旗山校区',
     location: '旗山校区图书馆三楼西区304自习室靠窗座位',
     date: '2026-10-02',
     timestamp: Date.now() - 1000 * 60 * 120, // 2小时前
@@ -44,7 +46,8 @@ const initialMockData = [
     type: 'found',
     title: '西三教学楼201教室捡到一把黑色折叠伞',
     category: '其他物品',
-    location: '西三教学楼201大教室第4排抽屉',
+    campus: '旗山校区',
+    location: '旗山校区西三教学楼201大教室第4排抽屉',
     date: '2026-10-01',
     timestamp: Date.now() - 1000 * 60 * 60 * 22, // 昨天
     desc: '黑色十骨天堂晴雨伞，手柄系有蓝色小熊挂绳，下雨天容易遗忘。目前暂存西三一楼保安室。',
@@ -60,7 +63,8 @@ const initialMockData = [
     type: 'lost',
     title: '风雨操场草坪遗落一串宿舍钥匙',
     category: '生活钥匙',
-    location: '风雨操场司令台正前方草坪',
+    campus: '旗山校区',
+    location: '旗山校区风雨操场司令台正前方草坪',
     date: '2026-09-30',
     timestamp: Date.now() - 1000 * 60 * 60 * 48, // 2天前
     desc: '钥匙串上有两把宿舍门钥匙和一把黑色自行车小钥匙，挂件是一个绿色小恐龙玩偶。',
@@ -76,7 +80,8 @@ const initialMockData = [
     type: 'found',
     title: '文科楼中庭石桌拾获《高等数学第七版》下册',
     category: '书籍文具',
-    location: '文科楼中庭石桌遮阳伞下',
+    campus: '旗山校区',
+    location: '旗山校区文科楼中庭石桌遮阳伞下',
     date: '2026-09-29',
     timestamp: Date.now() - 1000 * 60 * 60 * 72,
     desc: '书本扉页有铅笔写的姓名“李*涵”，夹着数张手写笔记草稿纸，请失主随时联系我认领。',
@@ -92,7 +97,8 @@ const initialMockData = [
     type: 'lost',
     title: '一区田径场看台丢失蓝色膳魔师保温水杯',
     category: '其他物品',
-    location: '一区田径场看台第三排中段',
+    campus: '旗山校区',
+    location: '旗山校区一区田径场看台第三排中段',
     date: '2026-09-28',
     timestamp: Date.now() - 1000 * 60 * 60 * 96,
     desc: '深蓝色杯身，表面贴有皮卡丘反光贴纸，杯底有少许掉漆磨损痕迹。',
@@ -101,6 +107,40 @@ const initialMockData = [
     contactVal: 'water_cup_seeker',
     status: 'solved',
     publisherName: '电气学院郑同学',
+    isMine: false
+  },
+  {
+    id: 1007,
+    type: 'lost',
+    title: '铜盘校区A教学楼302遗落高数习题册与黑色笔袋',
+    category: '书籍文具',
+    campus: '铜盘校区',
+    location: '铜盘校区A教学楼302教室第3排',
+    date: '2026-10-02',
+    timestamp: Date.now() - 1000 * 60 * 60 * 5,
+    desc: '绿色活页高数笔记，内夹软工课表。拾到的学弟学妹请联系我，必有奶茶感谢！',
+    img: 'assets/images/item_1005_book.jpg',
+    contactType: '微信',
+    contactVal: 'fzu_tp_student',
+    status: 'open',
+    publisherName: '铜盘软件小林',
+    isMine: false
+  },
+  {
+    id: 1008,
+    type: 'found',
+    title: '厦门集美校区设计大楼一楼展厅拾获数位板压感笔',
+    category: '数码电子',
+    campus: '厦门集美校区',
+    location: '厦门集美校区设计大楼一楼展厅休息长凳',
+    date: '2026-10-01',
+    timestamp: Date.now() - 1000 * 60 * 60 * 18,
+    desc: 'Wacom黑色压感笔，笔身贴有一只猫咪贴纸。已暂存设计大楼值班室，请失主前往认领。',
+    img: 'assets/images/item_1002_airpods.jpg',
+    contactType: 'QQ',
+    contactVal: '839201948',
+    status: 'open',
+    publisherName: '工艺美院小郭',
     isMine: false
   }
 ];
@@ -140,9 +180,9 @@ const DataManager = {
         if (parsed.length > 0) {
           // 自动修正预设物品中的旧图片链接为对应的高清本地图片
           let hasUpgrade = false;
-          const PRESET_IDS = [1001, 1002, 1003, 1004, 1005, 1006];
+          const PRESET_IDS = [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008];
           parsed.forEach(it => {
-            // 系统预设物品（1001~1006）在未被主动编辑修改时保持官方高清实物图
+            // 系统预设物品（1001~1008）在未被主动编辑修改时保持官方高清实物图
             if (!it.updatedAt) {
               if (it.id === 1001 && (!it.img || it.img.includes('unsplash.com'))) {
                 it.img = 'assets/images/item_1001_card.jpg';
@@ -163,10 +203,25 @@ const DataManager = {
               } else if (it.id === 1006 && (!it.img || it.img.includes('unsplash.com'))) {
                 it.img = 'assets/images/item_1006_bottle.jpg';
                 hasUpgrade = true;
+              } else if (it.id === 1007 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1005_book.jpg';
+                hasUpgrade = true;
+              } else if (it.id === 1008 && (!it.img || it.img.includes('unsplash.com'))) {
+                it.img = 'assets/images/item_1002_airpods.jpg';
+                hasUpgrade = true;
               }
             }
 
-            // 仅对用户自建的物品（ID 不在 1001~1006 预设范围内）：规范未上传图片时的缺省值，保持为空值占位
+            // 确保每个物品都有 campus 字段（平滑兼容本地缓存老数据）
+            if (!it.campus) {
+              const utilObj = typeof Utils !== 'undefined' ? Utils : (typeof require !== 'undefined' ? require('./utils.js') : null);
+              if (utilObj && utilObj.detectCampus) {
+                it.campus = utilObj.detectCampus(it);
+                hasUpgrade = true;
+              }
+            }
+
+            // 仅对用户自建的物品（ID 不在预设范围内）：规范未上传图片时的缺省值，保持为空值占位
             if (!PRESET_IDS.includes(it.id) && typeof it.img === 'string' && it.img.startsWith('assets/images/')) {
               it.img = '';
               hasUpgrade = true;
@@ -215,9 +270,12 @@ const DataManager = {
     const timestamp = Date.now();
     let id = timestamp;
     while (items.some(item => String(item.id) === String(id))) id++;
+    const utilObj = typeof Utils !== 'undefined' ? Utils : (typeof require !== 'undefined' ? require('./utils.js') : null);
+    const campus = rawItem.campus || (utilObj && utilObj.detectCampus ? utilObj.detectCampus(rawItem) : '旗山校区');
     const newItem = {
       ...rawItem,
       id,
+      campus,
       timestamp,
       status: 'open',
       isMine: true,
@@ -257,7 +315,7 @@ const DataManager = {
     const target = { ...items[index] };
 
     const editableFields = [
-      'type', 'title', 'category', 'location', 'date', 'desc',
+      'type', 'title', 'category', 'campus', 'location', 'date', 'desc',
       'contactType', 'contactVal', 'img'
     ];
     editableFields.forEach(field => {

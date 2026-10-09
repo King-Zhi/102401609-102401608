@@ -867,6 +867,111 @@ const UnitTests = [
         assert.isTrue(result.isValid, `合规微信号 "${contactVal}" 应当通过校验`);
       });
     }
+  },
+
+  {
+    name: '测试用例 51: 福州大学 7 大校区专属筛选（精准隔离与过滤测试）',
+    category: '多校区检索测试 (filterItems)',
+    description: '验证按指定校区（如铜盘校区或厦门集美校区）筛选时，不同校区条目精准隔离，仅返回所选校区的物品信息。',
+    testFn(assert) {
+      const mockList = [
+        { id: 1, title: '旗山食堂饭卡', campus: '旗山校区', location: '旗山校区一区食堂', type: 'found', category: '校园卡/证件', status: 'open' },
+        { id: 2, title: '铜盘高数笔记', campus: '铜盘校区', location: '铜盘校区A教学楼', type: 'lost', category: '书籍文具', status: 'open' },
+        { id: 3, title: '集美画板压感笔', campus: '厦门集美校区', location: '厦门集美校区设计大楼', type: 'found', category: '数码电子', status: 'open' },
+        { id: 4, title: '旗山图书馆耳机', campus: '旗山校区', location: '旗山校区图书馆', type: 'lost', category: '数码电子', status: 'open' }
+      ];
+
+      const tongpanResults = Utils.filterItems(mockList, { campus: '铜盘校区' });
+      assert.strictEqual(tongpanResults.length, 1, '铜盘校区筛选应仅返回 1 条记录');
+      assert.strictEqual(tongpanResults[0].id, 2, '匹配条目应为铜盘高数笔记');
+
+      const jimeiResults = Utils.filterItems(mockList, { campus: '厦门集美校区' });
+      assert.strictEqual(jimeiResults.length, 1, '厦门集美校区筛选应仅返回 1 条记录');
+      assert.strictEqual(jimeiResults[0].id, 3, '匹配条目应为集美画板压感笔');
+
+      const qishanResults = Utils.filterItems(mockList, { campus: '旗山校区' });
+      assert.strictEqual(qishanResults.length, 2, '旗山校区应返回 2 条记录');
+
+      const allResults = Utils.filterItems(mockList, { campus: 'all' });
+      assert.strictEqual(allResults.length, 4, '全部校区应返回全部 4 条记录');
+    }
+  },
+
+  {
+    name: '测试用例 52: 校区与地点功能大区（食堂/图书馆/教学楼）多重组合检索',
+    category: '多维度复合筛选测试 (filterItems)',
+    description: '测试同时指定“旗山校区”与“图书馆”，验证大范围校区与微观场所大区同时生效的交集复合检索准确性。',
+    testFn(assert) {
+      const mockList = [
+        { id: 1, title: '旗山一区食堂学生卡', campus: '旗山校区', location: '旗山校区一区食堂', type: 'found', category: '校园卡/证件', status: 'open' },
+        { id: 2, title: '旗山图书馆耳机', campus: '旗山校区', location: '旗山校区图书馆西区', type: 'lost', category: '数码电子', status: 'open' },
+        { id: 3, title: '铜盘图书馆自习册', campus: '铜盘校区', location: '铜盘校区图书馆二楼', type: 'lost', category: '书籍文具', status: 'open' },
+        { id: 4, title: '怡山食堂饭卡', campus: '怡山校区', location: '怡山校区二食堂', type: 'found', category: '校园卡/证件', status: 'open' }
+      ];
+
+      // 筛选：旗山校区 + 图书馆
+      const qishanLibrary = Utils.filterItems(mockList, { campus: '旗山校区', location: '图书馆' });
+      assert.strictEqual(qishanLibrary.length, 1, '仅能匹配到旗山校区的图书馆条目');
+      assert.strictEqual(qishanLibrary[0].id, 2, '应精准匹配 ID 为 2 的旗山图书馆耳机');
+
+      // 筛选：铜盘校区 + 图书馆
+      const tongpanLibrary = Utils.filterItems(mockList, { campus: '铜盘校区', location: '图书馆' });
+      assert.strictEqual(tongpanLibrary.length, 1, '仅能匹配到铜盘校区的图书馆条目');
+      assert.strictEqual(tongpanLibrary[0].id, 3, '应精准匹配 ID 为 3 的铜盘图书馆条目');
+    }
+  },
+
+  {
+    name: '测试用例 53: 发布信息自动绑定校区与编辑时校区状态保留',
+    category: '校区数据持久化测试 (DataManager)',
+    description: '测试发布带有校区的新物品，验证数据层成功持久化校区属性，且后续编辑时能够正确保留或修改校区。',
+    testFn(assert) {
+      const newItem = {
+        title: '铜盘新发布钥匙',
+        type: 'lost',
+        category: '生活钥匙',
+        campus: '铜盘校区',
+        location: '铜盘校区宿舍楼下',
+        date: '2026-10-02',
+        contactType: '微信',
+        contactVal: 'tp_key_lost'
+      };
+      const created = DataManager.addItem(newItem);
+      assert.strictEqual(created.campus, '铜盘校区', '新发布条目应包含正确的校区属性');
+
+      // 编辑校区为晋江校区
+      const updateResult = DataManager.updateItem(created.id, { campus: '晋江校区', location: '晋江校区金井教学楼' });
+      assert.isTrue(updateResult, '编辑校区应执行成功');
+      const reloaded = DataManager.getItemById(created.id);
+      assert.strictEqual(reloaded.campus, '晋江校区', '修改后的校区应成功持久化');
+
+      // 清理测试数据
+      DataManager.deleteItem(created.id);
+    }
+  },
+
+  {
+    name: '测试用例 54: 非法校区名称输入安全拦截校验',
+    category: '校区边界值测试 (validateItem)',
+    description: '当传入非福州大学官方 7 大校区（如外校校区或任意伪造名称）时，系统应严格拒绝并通过校验错误提示。',
+    testFn(assert) {
+      const invalidCampusItem = {
+        title: '外校非法物品',
+        type: 'found',
+        category: '生活钥匙',
+        campus: '哈佛大学校区', // 非法校区
+        location: '哈佛主楼',
+        date: '2026-10-02',
+        contactType: '微信',
+        contactVal: 'campus_test'
+      };
+      const result = Utils.validateItem(invalidCampusItem);
+      assert.isFalse(result.isValid, '非法校区输入必须被拦截');
+      assert.isTrue(
+        result.errors.some(e => e.includes('所属校区必须在预设的福州大学校区范围内')),
+        '应提示福州大学预设校区范围错误信息'
+      );
+    }
   }
 ];
 

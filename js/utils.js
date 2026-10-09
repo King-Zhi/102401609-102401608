@@ -23,6 +23,44 @@ const Utils = {
     return { isValid: true, message: '' };
   },
 
+  // 福州大学七大校区官方标准名单
+  CAMPUSES: [
+    '旗山校区',
+    '铜盘校区',
+    '怡山校区',
+    '泉港校区',
+    '晋江校区',
+    '厦门集美校区',
+    '厦门鼓浪屿校区'
+  ],
+
+  /**
+   * 从地点文本或校区属性中识别所属校区（支持简称与关联词模糊识别）
+   * @param {string|Object} target 地点字符串或物品对象
+   * @returns {string} 规范校区名称
+   */
+  detectCampus(target = '') {
+    const loc = typeof target === 'object' && target !== null
+      ? (target.campus || target.location || '')
+      : String(target || '');
+
+    // 精确匹配与长词优先
+    for (const c of this.CAMPUSES) {
+      if (loc.includes(c)) return c;
+    }
+    // 简称/关键字识别
+    if (loc.includes('鼓浪屿')) return '厦门鼓浪屿校区';
+    if (loc.includes('集美') || loc.includes('厦门') || loc.includes('工艺美院')) return '厦门集美校区';
+    if (loc.includes('铜盘')) return '铜盘校区';
+    if (loc.includes('怡山') || loc.includes('至诚')) return '怡山校区';
+    if (loc.includes('泉港') || loc.includes('石化')) return '泉港校区';
+    if (loc.includes('晋江')) return '晋江校区';
+    if (loc.includes('旗山')) return '旗山校区';
+
+    // 默认福州大学办学主体：旗山校区
+    return '旗山校区';
+  },
+
   formatLocalDate(date = new Date()) {
     const year = String(date.getFullYear()).padStart(4, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -71,6 +109,11 @@ const Utils = {
       errors.push('地点描述至少需要2个字符');
     } else if (location.length > 50) {
       errors.push('地点描述不能超过50个字符');
+    }
+
+    // 校区校验（可选/默认兼容）：若明确提供校区，须符合福州大学预设校区范围
+    if (item.campus && !this.CAMPUSES.includes(item.campus)) {
+      errors.push('所属校区必须在预设的福州大学校区范围内');
     }
 
     const dateParts = typeof item.date === 'string' && /^(\d{4})-(\d{2})-(\d{2})$/.exec(item.date);
@@ -135,6 +178,7 @@ const Utils = {
       keyword = '',
       type = 'all',
       category = 'all',
+      campus = 'all',
       location = 'all',
       status = 'all'
     } = query;
@@ -157,14 +201,22 @@ const Utils = {
         return false;
       }
 
-      // 4. 地点大区过滤
+      // 4. 校区过滤
+      if (campus && campus !== 'all') {
+        const itemCampus = item.campus || this.detectCampus(item);
+        if (itemCampus !== campus && !String(item.location || '').includes(campus)) {
+          return false;
+        }
+      }
+
+      // 5. 地点大区过滤
       if (location !== 'all' && !item.location.includes(location)) {
         return false;
       }
 
-      // 5. 关键词多维度智能模糊匹配（支持直接包含、校园简称与子序列模糊）
+      // 6. 关键词多维度智能模糊匹配（支持直接包含、校园简称与子序列模糊）
       if (kw) {
-        const fields = [item.title, item.desc, item.location, item.category];
+        const fields = [item.title, item.desc, item.location, item.category, item.campus || ''];
         const hasMatch = fields.some(field => this.matchKeyword(field, kw));
         if (!hasMatch) {
           return false;
@@ -195,6 +247,12 @@ const Utils = {
         score += 40;
       } else if (this.matchKeyword(item.location, kw)) {
         score += 25;
+      }
+
+      // 校区命中
+      const campusLower = (item.campus || '').toLowerCase();
+      if (campusLower && campusLower.includes(kw)) {
+        score += 35;
       }
 
       // 分类命中

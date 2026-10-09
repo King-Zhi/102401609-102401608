@@ -140,6 +140,21 @@
             </select>
           </div>
 
+          <!-- 校区筛选 -->
+          <div class="dark-select-wrap flex items-center gap-1">
+            <span class="text-slate-400">校区:</span>
+            <select id="selectCampus" onchange="App.onCampusChange(this.value)" class="dark-select">
+              <option value="all">全部校区</option>
+              <option value="旗山校区">旗山校区</option>
+              <option value="铜盘校区">铜盘校区</option>
+              <option value="怡山校区">怡山校区</option>
+              <option value="泉港校区">泉港校区</option>
+              <option value="晋江校区">晋江校区</option>
+              <option value="厦门集美校区">厦门集美校区</option>
+              <option value="厦门鼓浪屿校区">厦门鼓浪屿校区</option>
+            </select>
+          </div>
+
           <!-- 地点大区筛选 -->
           <div class="dark-select-wrap flex items-center gap-1">
             <span class="text-slate-400">地点:</span>
@@ -281,10 +296,24 @@
           </div>
         </div>
 
-        <!-- 遗失/拾获地点 -->
-        <div>
-          <label id="formLocationLabel" class="block font-semibold text-slate-700 mb-1">遗失地点 <span class="text-rose-500">*</span></label>
-          <input type="text" id="formLocation" required placeholder="如：旗山校区图书馆三楼西区 / 一区食堂二楼" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition text-xs text-slate-800">
+        <!-- 所属校区与遗失/拾获具体地点 -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">所属校区 <span class="text-rose-500">*</span></label>
+            <select id="formCampus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-xs text-slate-800 cursor-pointer">
+              <option value="旗山校区" selected>旗山校区</option>
+              <option value="铜盘校区">铜盘校区</option>
+              <option value="怡山校区">怡山校区</option>
+              <option value="泉港校区">泉港校区</option>
+              <option value="晋江校区">晋江校区</option>
+              <option value="厦门集美校区">厦门集美校区</option>
+              <option value="厦门鼓浪屿校区">厦门鼓浪屿校区</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label id="formLocationLabel" class="block font-semibold text-slate-700 mb-1">具体地点 <span class="text-rose-500">*</span></label>
+            <input type="text" id="formLocation" required placeholder="如：图书馆三楼西区 / 一区食堂二楼水吧" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white transition text-xs text-slate-800">
+          </div>
         </div>
 
         <!-- 物品描述 -->
