@@ -72,14 +72,17 @@
     if (!app.filters.keyword.trim()) {
       filtered.sort((a, b) => Number(a.status === 'solved') - Number(b.status === 'solved') || itemTime(b) - itemTime(a));
     }
-    const isDefaultView = !app.filters.keyword.trim() && app.filters.type === 'all' &&
+    const isDefaultView = !app.filters.keyword.trim() &&
       app.filters.category === 'all' && app.filters.location === 'all' && app.filters.status === 'all';
     const latest = isDefaultView ? filtered.filter(item => item.status !== 'solved').slice(0, 3) : [];
 
     const latestHeading = latestSection.querySelector('h2');
     if (latestHeading) {
+      let typeLabel = '最新线索';
+      if (app.filters.type === 'lost') typeLabel = '最新寻物';
+      else if (app.filters.type === 'found') typeLabel = '最新招领';
       const campusText = (app.filters.campus && app.filters.campus !== 'all') ? ` · ${app.filters.campus}` : '';
-      latestHeading.textContent = `最新线索${campusText}`;
+      latestHeading.textContent = `${typeLabel}${campusText}`;
     }
 
     latestSection.classList.toggle('is-empty', latest.length === 0);

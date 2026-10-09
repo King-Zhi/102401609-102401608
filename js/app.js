@@ -780,8 +780,12 @@ const App = {
 
       this.closePublishModal();
 
-      // 切换到对应 Tab 并刷新
-      this.setTypeFilter(updatedItem.type);
+      // 保持全部视图或切至对应类型视图并刷新
+      if (this.filters.type === 'all' || !this.filters.type) {
+        this.setTypeFilter('all');
+      } else {
+        this.setTypeFilter(updatedItem.type);
+      }
       if (wasEditing && this.currentDetailItem && this.currentDetailItem.id === updatedItem.id) {
         this.openDetail(updatedItem.id);
       }
