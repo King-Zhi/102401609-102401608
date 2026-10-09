@@ -73,12 +73,18 @@
       filtered.sort((a, b) => Number(a.status === 'solved') - Number(b.status === 'solved') || itemTime(b) - itemTime(a));
     }
     const isDefaultView = !app.filters.keyword.trim() && app.filters.type === 'all' &&
-      app.filters.category === 'all' && (!app.filters.campus || app.filters.campus === 'all') &&
-      app.filters.location === 'all' && app.filters.status === 'all';
+      app.filters.category === 'all' && app.filters.location === 'all' && app.filters.status === 'all';
     const latest = isDefaultView ? filtered.filter(item => item.status !== 'solved').slice(0, 3) : [];
+
+    const latestHeading = latestSection.querySelector('h2');
+    if (latestHeading) {
+      const campusText = (app.filters.campus && app.filters.campus !== 'all') ? ` · ${app.filters.campus}` : '';
+      latestHeading.textContent = `最新线索${campusText}`;
+    }
 
     latestSection.classList.toggle('is-empty', latest.length === 0);
     latestCount.textContent = latest.length ? `共 ${latest.length} 条` : '';
+    latestGrid.dataset.count = String(latest.length);
     latestGrid.innerHTML = latest.map(featureMarkup).join('');
 
     const listItems = filtered;
